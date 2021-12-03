@@ -37,3 +37,4 @@ A stab at co-op multitasking on ARMv7.
 <p>greenlets also take care of function-argument destruction when the function finishes.</p>
 <p>There's some inline-assembly, but the compiler does so much of the heavy lifting/logistics/portability boons.</p>
 <p>There's an optimization that detects backward-ordered tuples (compared to a similar struct) at compile-time.  The code will reverse the backwards tuples at compile-time.  This removes a lot of unnecessary memory-shuffling on ARM when calling std::apply, in comparison to the naive approach.</p>
+<p>SCONS instead of GNU make.  It worked on macOS, and then Windows, and then linux, with a dramatic dearth of fuss.  Bless, SCONS.</p>
