@@ -1,5 +1,4 @@
 # scheduler
-<h1>Scheduler</h1>
 A stab at co-op multitasking on ARMv7.
 
 <h2>Motive</h2>
@@ -20,10 +19,10 @@ A stab at co-op multitasking on ARMv7.
 
 
 <h2>What do you wish it would do?</h2>
-\* Allow polymorphic greenlets that are picky about what register-sets they save/restore.
-\* Work with the MMU to forbid access to another greenlet's space, or interrupt on OOB access.
-\* Schedule greenlet execution based off interrupts
-\* Handle exception throwing... maybe.  Exceptions are philosophically weird.
+* Allow polymorphic greenlets that are picky about what register-sets they save/restore.
+* Work with the MMU to forbid access to another greenlet's space, or interrupt on OOB access.
+* Schedule greenlet execution based off interrupts
+* Handle exception throwing... maybe.  Exceptions are philosophically weird.
 
 <h2>Why not work on this some more?</h2>
 <p>Co-routines obsolete the coolest part of this project IMO.  I couldn't compile the example-code on Godbolt while Scheduler was being tested on hardware.</p>
