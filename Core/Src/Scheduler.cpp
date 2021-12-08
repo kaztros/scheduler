@@ -33,6 +33,11 @@ void Scheduler::sleep() {
   yield();
 }
 
+void Scheduler::wake_other(Scheduler::ctx_handle_t other) {
+  //Contract (GetIndex(this->caps_is_used, other) == true)
+  SetIndex (this->caps_is_autosheduled, other);
+}
+
 void Scheduler::run_until_all_joined () {
   while (any (caps_is_used)) {
     caps_needs_cleanup.on_every_true (

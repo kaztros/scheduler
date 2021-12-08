@@ -126,6 +126,7 @@ struct Scheduler {
 
   void yield ();  // Yield control.
   void sleep ();  // Yield control and remove from auto-schedule.
+  void wake_other (ctx_handle_t other);
 
 protected:
   void free_greenlet (ctx_handle_t);
