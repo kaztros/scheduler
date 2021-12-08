@@ -200,3 +200,18 @@ constexpr bool any (BitSet<WIDTH> const & lhs) {
 
   return check_nonzero != 0;
 }
+
+template <size_t WIDTH>
+constexpr bool all (BitSet<WIDTH> const & lhs) {
+  uregister_t check_zero = ~(uregister_t (0));
+  lhs.apply (
+    [&check_zero] (auto const idx_beg, auto const word_size, uregister_t ele) {
+			ele |= ~((1UL << word_size) - 1);		//Set any bits unused to '1'.
+    	check_zero &= ele;
+    }
+  );
+
+	return uregister_t (0) == ~check_zero;
+}
+
+
