@@ -4,7 +4,7 @@
 
 template <typename ... TYPES>
 struct OptionalTuple {
-  using SIZE = sizeof...(TYPES);
+  static constexpr auto SIZE = sizeof...(TYPES);
 
   std::tuple <TYPES...> values;
   BitSet<SIZE> is_values; 
@@ -22,7 +22,7 @@ auto get (std::tuple <TYPES...> & t) noexcept -> std::optional <std::tuple_eleme
 
 
 template <size_t IDX, typename ... TYPES>
-auto&& get (std::tuple <TYPES...> && t) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(t)>> {
+auto get (std::tuple <TYPES...> && t) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(t)>> {
   if (GetIndex(is_values, IDX)) {
     return std::make_optional (std::get <IDX> (std::forward <std::tuple <TYPES>> (t)));
   } else {
