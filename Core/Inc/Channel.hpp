@@ -1,5 +1,7 @@
 #include <optional>
 #include "Scheduler.hpp"
+#include "OptionalTuple.hpp"
+
 
 template <typename T>
 void source_default (T trash) { /* Do nothing.  Or maybe debug? */ }
@@ -19,41 +21,45 @@ struct SourceDelegate {
 	SourceDelegate (U x) : source (std::forward <U> (x)) { }
 };
 
+template <typename T>
+struct ChannelProtocol
+: SinkProtocol <T>
+, SourceDelegate <T>
+{ };
 
 template <typename T>
 struct ChannelIdentity
-: public SinkProtocol <T>
-, public SourceDelegate <T>
+: ChannelProtocol <T>
 {
 	void sink (T x) override { this->source(x); }	
 };
-
-#include "OptionalTuple.hpp"
 
 template <typename...T>
 struct ChannelAnder
 : public SourceDelegate <std::tuple <T...>>
 {
-	using TUPLE_T = typename std::tuple <T...>;
-  using OPT_TUPLE_T = typename OptionalTuple <T...>;
+	using TUPLE_T = std::tuple <T...>;
+  using OPT_TUPLE_T = OptionalTuple <T...>;
 
 	template <size_t IDX>
-	using TUPLE_SUB_T = std::tuple_element <IDX, TUPLE_T>;
+	using TUPLE_SUB_T = std::tuple_element_t <IDX, TUPLE_T>;
+	
 	
 	OPT_TUPLE_T values_maybe;
+
 
 	ChannelAnder (SourceDelegate <T> & args...)
 	: SourceDelegate <std::tuple <T...>> ()
 	{
-		FillSinksHelper (std::index_sequence_for <args> (), args...);
+		redirect_sinks_helper (std::std::index_sequence_for <T...> {}, args...);
 	}
 	
 	template <size_t IDX>
 	void sink (TUPLE_SUB_T x) {
 		if ( ! GetIndex (values_maybe.is_values, IDX) ) {
-			values_maybe.values = x;
+			std::get <IDX> (values_maybe.values) = x;
 			SetIndex (values_maybe.is_values, IDX);	
-			if (all (values_maybe.is_values) ) {
+			if (all (values_maybe.is_values)) {
 				this->source (values_maybe.values);
 			}
 		}
@@ -61,25 +67,17 @@ struct ChannelAnder
 	
 protected:
 	template <class INT_T, INT_T ... INTS>
-	void FillSinksHelper (std::integer_sequence<INT_T, INTS...>, SourceDelegate<T> & args ...) {
-		auto args_as_lref_tuple = std::tie (args);		
-		(	( std::get <INTS> (args_as_lref_tuple) 
-			  = [this] (T x) { this->sink <INTS> (x); }
+	void redirect_sinks_helper (std::integer_sequence<INT_T, INTS...>, SourceDelegate<T> & args ...) {
+		auto args_as_lref_tuple = std::tie (args...);
+		(	( std::get <INTS> (args_as_lref_tuple).source
+			  = [this] (TUPLE_SUB_T <INTS> x) { this->sink <INTS> (x); }
 			)
 		,
 		...);
 	}
-	
 };
 
 /*
-
-template <typename T>
-class NullSource {
-	void deferredWake (T&& x) { }
-	std::optional<T> source() { return std::nullopt; }
-};
-
 
 template <typename T>
 class ScheduledSource {
