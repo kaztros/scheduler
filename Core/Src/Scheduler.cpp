@@ -35,7 +35,9 @@ void Scheduler::sleep() {
 
 void Scheduler::wake_other(Scheduler::ctx_handle_t other) {
   //Contract (GetIndex(this->caps_is_used, other) == true)
-  SetIndex (this->caps_is_autosheduled, other);
+  if (GetIndex(this->caps_is_used, other)) {
+    SetIndex (this->caps_is_autoscheduled, other);
+  }
 }
 
 void Scheduler::run_until_all_joined () {

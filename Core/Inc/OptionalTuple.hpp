@@ -12,9 +12,9 @@ struct OptionalTuple {
 
 
 template <size_t IDX, typename ... TYPES>
-auto get (std::tuple <TYPES...> & t) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(t)> & > {
-  if (GetIndex(is_values, IDX)) {
-    return std::make_optional (std::get <IDX> (t));
+auto get (OptionalTuple <TYPES...> & ot) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(ot)> & > {
+  if (GetIndex(ot.is_values, IDX)) {
+    return std::make_optional (std::get <IDX> (ot.values));
   } else {
     return {};
   }
@@ -22,9 +22,9 @@ auto get (std::tuple <TYPES...> & t) noexcept -> std::optional <std::tuple_eleme
 
 
 template <size_t IDX, typename ... TYPES>
-auto get (std::tuple <TYPES...> && t) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(t)>> {
-  if (GetIndex(is_values, IDX)) {
-    return std::make_optional (std::get <IDX> (std::forward <std::tuple <TYPES>> (t)));
+auto get (OptionalTuple <TYPES...> && ot) noexcept -> std::optional <std::tuple_element_t <IDX, decltype(ot)>> {
+  if (GetIndex (ot.is_values, IDX)) {
+    return std::make_optional (std::get <IDX> (std::forward <std::tuple <TYPES...>> (ot.values)));
   } else {
     return {};
   }
