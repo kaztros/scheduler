@@ -13,10 +13,8 @@ def phrase_args(prefix, **kwargs):
 
 def generate(env, **kwargs):
   #
-  #env['ENV']['PATH'] += ';' + 'C:\\Users\\kaz\\ac6\\plugins\\fr.ac6.mcu.externaltools.arm-none.win32_1.17.0.201812190825\\tools\\compiler\\bin'
   #env['ENV']['PATH'] += ';' + 'C:\\Users\\kaz\\Development\\gcc-arm-none-eabi-9-2020-q2-update-win32\\bin'
-  #env['ENV']['PATH'] += ':' + '/Users/kaz/Development/gcc-arm-none-eabi-9-2020-q2-update/bin'
-  env['ENV']['PATH'] += ':' + '/home/kaz/Development/gcc-arm-none-eabi-10.3-2021.10/bin'
+  env['ENV']['PATH'] += ':' + '/Users/kaz/Development/gcc-arm-none-eabi-10.3-2021.10/bin'
   env['AR'] = 'arm-none-eabi-gcc-ar'
   env['AS'] = 'arm-none-eabi-gcc -x assembler-with-cpp -c'
   env['CC'] = 'arm-none-eabi-gcc'
