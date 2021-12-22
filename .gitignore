@@ -8,3 +8,4 @@
 # Particularly .sconsign.dblite
 build/
 !.gitignore
+*.pyc
