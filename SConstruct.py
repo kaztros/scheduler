@@ -13,11 +13,12 @@ env.Append(CPPPATH=['#Core/Inc'])
 
 
 # TODO: Make a function call to handle sub-sconscripts.
-env.Append(CXXFLAGS=['-std=c++17', '-fno-rtti', '-fno-use-cxa-atexit'])
+env.Append(CXXFLAGS=['-std=c++20', '-fno-rtti', '-fno-use-cxa-atexit'])
 env.Append(CXXFLAGS=['-fno-exceptions', '-fno-non-call-exceptions'])
 env.Append(CXXFLAGS=['-fno-common', '-ffreestanding'])
 env.Append(CXXFLAGS=['-static-libstdc++'])
 env.Append(CXXFLAGS=['-Wno-pmf-conversions'])
+env.Append(CXXFLAGS=['-Wno-invalid-offsetof'])
 
 OptimizationLevel = ['-Og', '-gdwarf-3']
 #OptimizationLevel = ['-O3', '-flto']
@@ -27,6 +28,7 @@ env.Append(LINKFLAGS=['-specs=nano.specs', '-specs=nosys.specs'])
 
 subproject_dirs = [ 'Core'
                   , 'Drivers/STM32L4xx_HAL_Driver'
+                  , 'usb'
                   ]
 
 libs = []

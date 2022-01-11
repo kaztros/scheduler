@@ -1,0 +1,6 @@
+Import('env')
+#obj = env.StaticLibrary(target = 'stm32l4xx_hal', source = Glob("*.c"))
+env.Append(CPPPATH=['.'])
+objs = env.StaticObject(Glob('./*.cpp'))
+lib = env.StaticLibrary(target = 'STM32L4xx_USB_Driver', source=objs)
+Return('lib')
