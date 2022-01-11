@@ -187,7 +187,8 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  
+  usb1 = 0x40006800;
+  usb1_sram = 0x40006C00;
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
