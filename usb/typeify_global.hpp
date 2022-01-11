@@ -80,8 +80,8 @@ template <typename base_t, typename typefied_t>
 struct base_of_typefied
 : public typefied_methods <base_t, base_of_typefied <base_t, typefied_t> >
 {
-  operator base_t &   () { return static_cast <base_t &> (*typefied_t()); }
-  base_t & operator * () { return static_cast <base_t &> (*typefied_t()); }
+  constexpr operator base_t &   () noexcept { return static_cast <base_t &> (*typefied_t()); }
+  constexpr base_t & operator * () noexcept { return static_cast <base_t &> (*typefied_t()); }
 };
 
 /// @brief A typefied reference to a member of a typefied reference.
@@ -99,8 +99,8 @@ struct member_of_typefied
 : public typefied_methods
     <member_t, member_of_typefied <member_t, struct_t, m_ptr, typefied_t>>
 {
-  operator member_t &   () { return (*typefied_t()).*m_ptr; }
-  member_t & operator * () { return (*typefied_t()).*m_ptr; }
+  constexpr operator member_t &   () noexcept { return (*typefied_t()).*m_ptr; }
+  constexpr member_t & operator * () noexcept { return (*typefied_t()).*m_ptr; }
 };
 
 /// @brief A typefied reference to an index of a typefied reference.
@@ -111,8 +111,8 @@ template <typename element_t, std::size_t index, typename typefied_t>
 struct index_of_typefied
 : public typefied_methods <element_t, index_of_typefied <element_t, index, typefied_t> >
 {
-  operator element_t &   () { return get <index> (*typefied_t()); }
-  element_t & operator * () { return get <index> (*typefied_t()); }
+  constexpr operator element_t &   () noexcept { return get <index> (*typefied_t()); }
+  constexpr element_t & operator * () noexcept { return get <index> (*typefied_t()); }
 };
 
 /*----------------------------------------------------------------------------*/
