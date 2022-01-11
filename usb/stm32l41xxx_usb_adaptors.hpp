@@ -119,7 +119,7 @@ std::span <volatile uint8_t> span
 ) {
   buffer_count_t regs_copy = raw_snapshot_of <buffer_count_t> (* BUFFER_SPANS_REF_T ());
                           // ^ avoid copying extra registers.
-  return { & (usb_sram->b) [btable_offset + sram_offset], regs_copy.byte_count };
+  return { & (usb_sram.b) [btable_offset + sram_offset], regs_copy.byte_count };
 }
 
 template
@@ -134,7 +134,7 @@ auto max_span
 , sram_range <BUFFER_SPANS_REF_T, sram_offset, max_size> range
 )
 {
-  volatile uint8_t * start = & (usb_sram->b) [btable_offset + sram_offset];
+  volatile uint8_t * start = & (usb_sram.b) [btable_offset + sram_offset];
   return std::span <volatile uint8_t, max_size> (start, start + max_size);
 }
 

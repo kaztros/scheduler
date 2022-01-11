@@ -189,6 +189,7 @@ using as_sub_isr_delegate_t = as_sub_isr_delegate_helper
 , std::is_base_of_v <endpoint_tx_buffer_size_base, EP_CTL_T>
 > ::type;
 
+/*----------------------------------------------------------------------------*/
 template <typename T>
 struct as_isr_delegate {
   static_assert ("Expecting tuple of tagged endpoint-control-register types.");
@@ -200,6 +201,100 @@ struct as_isr_delegate <std::tuple<EP_CTL_T...>> {
   : public as_sub_isr_delegate_t <EP_CTL_T> ...
   { };
 };
+
+/*----------------------------------------------------------------------------*/
+template <typename...TAGS>
+constexpr std::tuple <std::size_t, std::size_t> max_sizes
+( endpoint_register_bidirectional_tagged_t <TAGS...> x )
+{
+  //Hardware is laid out to have TX before RX on this board.
+  return std::make_tuple (decltype(x)::TX_BUFFER_SIZE, decltype(x)::RX_BUFFER_SIZE);
+}
+
+template <typename...TAGS>
+constexpr std::tuple <std::size_t, std::size_t> max_sizes
+( endpoint_register_unidirectional_rx_tagged_t <TAGS...> x )
+{
+  //Hardware is laid out to have TX before RX on this board.
+  return std::make_tuple (decltype(x)::RX_BUFFER_SIZE, decltype(x)::RX_BUFFER_SIZE);
+}
+
+template <typename...TAGS>
+constexpr std::tuple <std::size_t, std::size_t> max_sizes
+( endpoint_register_unidirectional_tx_tagged_t <TAGS...> x )
+{
+  //Hardware is laid out to have TX before RX on this board.
+  return std::make_tuple (decltype(x)::TX_BUFFER_SIZE, decltype(x)::TX_BUFFER_SIZE);
+}
+
+/*----------------------------------------------------------------------------*/
+
+template
+< typename BTABLE_REF_TYPEFIED
+, std::size_t EP_CTL_IDX
+, typename EP_CTL_TAGGED_T
+, std::size_t accumulated_bytes
+>
+struct as_sram_range_types {
+  static constexpr std::tuple <std::size_t, std::size_t> SIZES = max_sizes (EP_CTL_TAGGED_T());
+  static constexpr auto SIZE = get<0>(SIZES) + get<1>(SIZES);
+  using array_type = std::tuple
+    < std::array <volatile uint8_t, get<0>(SIZES)>
+    , std::array <volatile uint8_t, get<1>(SIZES)>
+    >;
+  
+  using type = std::tuple
+    < sram_range
+      < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
+      , accumulated_bytes + 0
+      , get<0>(SIZES)
+      >
+    , sram_range
+      < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
+      , accumulated_bytes + get<0>(SIZES)
+      , get<1>(SIZES)
+      >
+    >;
+};
+
+template
+< typename BTABLE_REF_TYPEFIED
+, std::size_t EP_CTL_IDX
+, std::size_t ACCUMULATED_BYTES
+, typename...SR_RANGES
+>
+constexpr auto as_sram_range_from_ep_ctl_helper
+  ( std::tuple <SR_RANGES...> acc
+  , std::tuple <> in
+  )
+{ return acc; };
+
+template
+< typename BTABLE_REF_TYPEFIED
+, std::size_t EP_CTL_IDX
+, std::size_t ACCUMULATED_BYTES
+, typename...SR_RANGES
+, typename EP_CTL_TAGGED_T
+, typename...EP_REST>
+constexpr auto as_sram_range_from_ep_ctl_helper
+  ( std::tuple <SR_RANGES...> acc
+  , std::tuple <EP_CTL_TAGGED_T, EP_REST...> in
+  )
+{
+  using T = as_sram_range_types <BTABLE_REF_TYPEFIED, EP_CTL_IDX, EP_CTL_TAGGED_T, ACCUMULATED_BYTES>;
+  
+  return as_sram_range_from_ep_ctl_helper
+    < BTABLE_REF_TYPEFIED
+    , EP_CTL_IDX + 1
+    , ACCUMULATED_BYTES + T::SIZE
+    >
+    ( std::tuple <SR_RANGES... , typename T::type> ()
+    , std::tuple <EP_REST...> ()
+    );
+};
+
+
+/*----------------------------------------------------------------------------*/
 
 //And I want that to generate the ISR code.
 //But this doesn't quite work.  It needs endpoint control types

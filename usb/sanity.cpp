@@ -14,6 +14,16 @@ using USB_CDC_Spec = decltype
   )
 );
 
+using sram_ranges_t =
+  decltype
+  ( as_sram_range_from_ep_ctl_helper
+    < typeify <usb1_sram> :: member<& decltype(usb1_sram)::buffer_spanses>
+    , 0
+    , 8 * std::tuple_size_v <USB_CDC_Spec>
+    >
+    (std::tuple<>(), USB_CDC_Spec())
+  );
+
 struct dummy_delegate
 : public as_isr_delegate <USB_CDC_Spec> ::type
 {
@@ -60,6 +70,17 @@ void race_fast () {
     if (ep_ctl_copy.ctr_rx) {
       ep_ctl = clear_ctr_rx (endpoint_nop (ep_ctl_copy));
 
+      delegate.handle_correct_rx
+      ( span
+        ( PMA_SPACE
+        , std::tuple_element_t
+          < 0
+          , std::tuple_element_t <ep_ctl_index, sram_ranges_t>
+          > ()
+        )
+      , ep_ctl_copy //works as endpoint_address_tag<>
+      );
+      
       //Signal that there's a buffer ready for reading.
       //delegate.handle_correct_rx
       //( pma_buffer_t
