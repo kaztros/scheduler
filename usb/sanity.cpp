@@ -17,22 +17,22 @@ using USB_CDC_Spec = decltype
 struct dummy_delegate
 : public as_isr_delegate <USB_CDC_Spec> ::type
 {
-  void handle_correct_rx (buffer_protocol &, endpoint_address_tag <0>) override {
+  void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag <0>) override {
     
   }
-  void handle_correct_tx (buffer_protocol &, endpoint_address_tag <0>) override {
+  void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag <0>) override {
     
   }
-  void handle_correct_rx (buffer_protocol &, endpoint_address_tag <1>) override {
+  void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag <1>) override {
     
   }
-  void handle_correct_tx (buffer_protocol &, endpoint_address_tag <1>) override {
+  void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag <1>) override {
     
   }
-  void handle_correct_rx (buffer_protocol &, endpoint_address_tag <2>) override {
-  
+  void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag <2>) override {
+    /* This shouldn't be. */
   }
-  void handle_correct_tx (buffer_protocol &, endpoint_address_tag <2>) override {
+  void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag <2>) override {
   
   }
 };
@@ -61,12 +61,12 @@ void race_fast () {
       ep_ctl = clear_ctr_rx (endpoint_nop (ep_ctl_copy));
 
       //Signal that there's a buffer ready for reading.
-      delegate.handle_correct_rx
-      ( pma_buffer_t
-        { buffer_spans [ get_application_rx_buffer_index (ep_ctl_copy) ]
-        }
-      , ep_ctl_copy
-      );
+      //delegate.handle_correct_rx
+      //( pma_buffer_t
+      //  { buffer_spans [ get_application_rx_buffer_index (ep_ctl_copy) ]
+      //  }
+      //, ep_ctl_copy
+      //);
       ep_ctl = release_rx_buffer (endpoint_nop(ep_ctl_copy));
       goto loop_again;
     }
@@ -77,13 +77,13 @@ void race_fast () {
       ep_ctl = clear_ctr_tx (endpoint_nop (ep_ctl_copy));
 
       //Signal that there's a buffer ready for writing.
-      delegate.handle_correct_tx
-      ( pma_buffer_t
-        { buffer_spans
-          [ get_application_tx_buffer_index (ep_ctl_copy) ]
-        }
-      , ep_ctl_copy
-      );
+      //delegate.handle_correct_tx
+      //( pma_buffer_t
+      //  { buffer_spans
+      //    [ get_application_tx_buffer_index (ep_ctl_copy) ]
+      //  }
+      //, ep_ctl_copy
+      //);
       goto loop_again;
     }
   }

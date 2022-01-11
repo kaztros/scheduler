@@ -147,16 +147,6 @@ struct as_ep_moded_register_type <address, transfer_type, 0, tx_buffer_size, fal
 };
 
 /*----------------------------------------------------------------------------*/
-/*
-typename USB_CDC_Spec = decltype
-( std::tuple_cat
-  ( as_ep_moded_register_type <0, CONTROL,   64, 64> ::type ()
-  , as_ep_moded_register_type <1, BULK,      64, 64> ::type ()
-  , as_ep_moded_register_type <2, INTERRUPT,  0,  8> ::type ()
-  )
-);
-*/
-
 template <uint8_t EP_ADDR>
 struct device_endpoint_in_isr_tagged_protocol {
   virtual void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) = 0;
@@ -167,13 +157,6 @@ struct device_endpoint_out_isr_tagged_protocol {
   virtual void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) = 0;
 };
 
-/*
-template <uint8_t EP_ADDR>
-struct device_endpoint_in_out_isr_tagged_protocol
-: public device_endpoint_in_isr_tagged_protocol <EP_ADDR>
-, public device_endpoint_out_isr_tagged_protocol <EP_ADDR>
-{ };
-*/
 /*----------------------------------------------------------------------------*/
 
 template <uint8_t EP_ADDR, bool does_OUT, bool does_IN>
@@ -254,10 +237,10 @@ void endpoint_sub_isr () {
       ep_ctl = clear_ctr_rx (endpoint_nop (ep_ctl_copy));
 
       //Signal that there's a buffer ready for reading.
-      delegate.handle_correct_rx
-      ( pma_buffer_t { buffer_descs
-        [ get_application_rx_buffer_index (ep_ctl_copy) ]
-      });
+      //delegate.handle_correct_rx
+      //( pma_buffer_t { buffer_descs         <- Replace with PMA_SPACE.span()
+      //  [ get_application_rx_buffer_index (ep_ctl_copy) ]
+      //});
       
       ep_ctl = release_rx_buffer (endpoint_nop(ep_ctl_copy));
       goto loop_again;
@@ -269,10 +252,10 @@ void endpoint_sub_isr () {
       ep_ctl = clear_ctr_tx (endpoint_nop (ep_ctl_copy));
 
       //Signal that there's a buffer ready for writing.
-      delegate.handle_correct_tx
-      ( pma_buffer_t { buffer_descs
-        [ get_application_rx_buffer_index (ep_ctl_copy) ]
-      });
+      //delegate.handle_correct_tx
+      //( pma_buffer_t { buffer_descs         <- Replace with PMA_SPACE.span()
+      //  [ get_application_rx_buffer_index (ep_ctl_copy) ]
+      //});
       
       goto loop_again;
     }

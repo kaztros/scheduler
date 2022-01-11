@@ -197,32 +197,6 @@ struct buffer_span_t
   buffer_span_t (buffer_span_t const volatile & rhs);
 };
 
-
-template <typename BUFFER_SPANS_REF_T, std::size_t offset, std::size_t max_size>
-struct sram_range {
-  static constexpr auto MAX_SIZE = max_size;
-  
-  static constexpr buffer_span_t default_value () {
-    buffer_span_t result;
-
-    result.byte_count = 0;
-    result.addr = offset;
-
-    if constexpr (0 == (max_size % 2) && max_size < 64) {
-      result.bl_size = 0;
-      result.num_block = max_size / 2;
-    } else if constexpr (0 == (max_size % 32) && max_size <= 1024) {
-      result.bl_size = 1;
-      result.num_block = (max_size / 32) - 1;
-    } else {
-      static_assert ("Unhandled length type.");
-    }
-    
-    return result;
-  }
-};
-
-
 using buffer_spans_t = std::array <buffer_span_t, 2>;
 
 /* Make sure these types are nothing more than their raw-equivalents. */
@@ -251,20 +225,8 @@ struct h_array {
       weave_volatile_t <buffer_spans_t[8]> buffer_spanses;
     };
   };
-
-  template <typename BUFFER_SPANS_REF_T, std::size_t offset, std::size_t max_size>
-  std::span <volatile uint8_t> span (sram_range <BUFFER_SPANS_REF_T, offset, max_size>) {
-    buffer_count_t regs_copy = raw_snapshot_of <buffer_count_t> (* BUFFER_SPANS_REF_T ());
-                            // ^ avoid copying extra registers.
-    return { & (this->b) [BTABLE_OFFSET + offset], regs_copy.byte_count };
-  }
-
-  template <typename BUFFER_SPANS_REF_T, std::size_t offset, std::size_t max_size>
-  auto max_span (sram_range <BUFFER_SPANS_REF_T, offset, max_size>) {
-    volatile uint8_t * start = & (this->b) [BTABLE_OFFSET + offset];
-    return std::span <volatile uint8_t, max_size> (start, start + max_size);
-  }
 };
+
 
 extern device_registers_t volatile usb1;     // @ 0x4000'6800, APB1
 extern h_array <1024> usb1_sram;             // @ 0x4000'6C00, APB1
