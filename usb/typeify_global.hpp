@@ -1,5 +1,6 @@
 #include <array>
 #include <tuple>
+#include <type_traits>
 
 /// "typeify" creates a constexpr type parameter referencing a global variable.
 ///
@@ -56,6 +57,27 @@ struct m_ptr {
 
 template <typename M, typename S>
 m_ptr<M, S> dissect (M S::*ptr) { return {}; }
+
+/*----------------------------------------------------------------------------*/
+template <typename T> struct weave_volatile { using type = volatile T; };
+
+template <typename T, std::size_t N>
+struct weave_volatile <T[N]>
+{ using helper = weave_volatile<T>::type;
+  using type = helper[N];
+};
+
+template <typename T, std::size_t N>
+struct weave_volatile <std::array <T, N>>
+{ using type = std::array <typename weave_volatile <T>::type, N>; };
+
+template <typename...Ts>
+struct weave_volatile <std::tuple <Ts...>>
+{ using type = std::tuple <typename weave_volatile <Ts>::type ...>; };
+
+template <typename T>
+using weave_volatile_t = typename weave_volatile<T>::type;
+
 /*----------------------------------------------------------------------------*/
 template <std::size_t index, typename T>
 auto && get (T && t) noexcept { return std::get <index> (std::forward <T> (t)); }
@@ -147,18 +169,21 @@ struct typefied_indexable <std::array <dream_t, N>, self_t> {
 /// @brief inheritable ::member<> method.  Enabled if dream_t is a union/class.
 template
 < typename dream_t, typename self_t
-, typename refless_t = std::remove_reference_t <dream_t>
-, bool enabled = std::is_class_v <refless_t> || std::is_union_v <refless_t>
+, bool enabled = std::is_class_v <std::remove_reference_t <dream_t>>
+    || std::is_union_v <std::remove_reference_t <dream_t>>
 >
 struct typefied_memberable {
-  template <auto dream_refless_t::*mm_ptr>
+  using refless_t = std::remove_reference_t <dream_t>;
+  //^ This can't be in the template parameters, due to a g++ (20200110) bug.
+
+  template <auto refless_t::*mm_ptr>
   using member = member_of_typefied
-    <typename decltype(dissect(mm_ptr))::member_t, dream_refless_t, mm_ptr, self_t>;
+    <typename decltype(dissect(mm_ptr))::member_t, refless_t, mm_ptr, self_t>;
 };
 
 /// @brief template specialization to disable non-unions and non-classes.
-template <typename dream_t, typename self_t, typename T>
-struct typefied_memberable <dream_t, self_t, T, false>
+template <typename dream_t, typename self_t>
+struct typefied_memberable <dream_t, self_t, false>
 { /* DISABLED */ };
 
 /*----------------------------------------------------------------------------*/
@@ -178,7 +203,7 @@ struct typefied_methods
 
 /*----------------------------------------------------------------------------*/
 /// @brief A reference to a global masquerading as a type.
-/// @note The base-case to all recursions starts here.
+/// @note All possible references start from here, to go around the global.
 template <auto & x>
 struct typeify
 : public typefied_methods <decltype(x), typeify <x>>
