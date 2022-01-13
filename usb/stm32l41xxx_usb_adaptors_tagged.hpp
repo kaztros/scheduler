@@ -149,12 +149,12 @@ struct as_ep_moded_register_type <address, transfer_type, 0, tx_buffer_size, fal
 /*----------------------------------------------------------------------------*/
 template <uint8_t EP_ADDR>
 struct device_endpoint_in_isr_tagged_protocol {
-  virtual void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) = 0;
+  virtual void handle_correct_tx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) noexcept = 0;
 };
 
 template <uint8_t EP_ADDR>
 struct device_endpoint_out_isr_tagged_protocol {
-  virtual void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) = 0;
+  virtual void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag<EP_ADDR> = {}) noexcept = 0;
 };
 
 /*----------------------------------------------------------------------------*/
@@ -310,77 +310,107 @@ constexpr auto as_sram_range_from_ep_ctl_helper
 //isr_tx ([2], addr <1>, protocol)
 //isr_tx ([3], addr <2>, protocol)
 
+template
+< typename sub_isr_delegate_ref
+, typename h_array_ref
+, typename sram_ranges_ref
+, typename ep_ctl_tagged_t
+>
+void endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+  ep_ctl = clear_ctr_rx (endpoint_nop (copy));
+  
+  *sub_isr_delegate_ref().handle_correct_rx
+  ( span
+    ( *h_array_ref()
+    , *sram_ranges_ref() [get_application_rx_buffer_index (copy)]
+    )
+  , copy
+  );
+
+  ep_ctl = release_rx_buffer (endpoint_nop (copy));
+}
 
 template
-< typename EP_CTL_TAGGED_T
-, as_sub_isr_delegate_t <EP_CTL_TAGGED_T> & delegate
-, device_registers_t volatile & device
-, std::size_t ep_ctl_index
-, std::size_t PMA_SIZE
-, std::size_t btable_offset = 0x0000
-, h_array <PMA_SIZE, btable_offset> & PMA_SPACE
-, buffer_spans_t volatile & buffer_descs = PMA_SPACE.buffer_spans [ep_ctl_index]
+< typename sub_isr_delegate_ref
+, typename h_array_ref
+, typename sram_ranges_ref
+, typename ep_ctl_tagged_t
 >
-void endpoint_sub_isr () {
-  auto volatile & ep_ctl = reinterpret_cast <EP_CTL_TAGGED_T volatile &> (device.ep[ep_ctl_index]);
-  EP_CTL_TAGGED_T ep_ctl_copy;
+void endpoint_sub_isr_tx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+  ep_ctl = clear_ctr_tx (endpoint_nop (copy));
   
-  loop_again:
-  ep_ctl_copy = raw_snapshot_of (ep_ctl);
-  if constexpr (0 != EP_CTL_TAGGED_T::RX_BUFFER_SIZE) {
-    if (ep_ctl_copy.ctr_rx) {
-      ep_ctl = clear_ctr_rx (endpoint_nop (ep_ctl_copy));
+  *sub_isr_delegate_ref().handle_correct_tx
+  ( max_span
+    ( *h_array_ref()
+    , *sram_ranges_ref() [get_application_tx_buffer_index (copy)]
+    )
+  , copy
+  );
+}
 
-      //Signal that there's a buffer ready for reading.
-      //delegate.handle_correct_rx
-      //( pma_buffer_t { buffer_descs         <- Replace with PMA_SPACE.span()
-      //  [ get_application_rx_buffer_index (ep_ctl_copy) ]
-      //});
-      
-      ep_ctl = release_rx_buffer (endpoint_nop(ep_ctl_copy));
-      goto loop_again;
+/*----------------------------------------------------------------------------*/
+
+// @brief Bi-dir ISR for a bi-dir endpoint, specifically typed void(void).
+template
+< typename ep_ctl_tagged_ref
+, typename sub_isr_delegate_ref
+, typename h_array_ref
+, typename sram_ranges_ref
+>
+void endpoint_sub_isr () noexcept {
+  auto volatile & ep_ctl = *ep_ctl_tagged_ref();
+  std::decay_t <decltype (ep_ctl)> ep_ctl_local;
+  
+  ep_ctl_local = ep_ctl;
+
+  if constexpr
+  ( std::is_base_of_v <endpoint_register_bidirectional_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_unidirectional_rx_t, decltype(ep_ctl_local)>
+  ) {
+    if (ep_ctl_local.ctr_rx) {
+      endpoint_sub_isr_rx
+        < sub_isr_delegate_ref, h_array_ref, sram_ranges_ref >
+        ( ep_ctl, ep_ctl_local );
     }
   }
-
-  if constexpr (0 != EP_CTL_TAGGED_T::TX_BUFFER_SIZE) {
-    if (ep_ctl_copy.ctr_tx) {
-      ep_ctl = clear_ctr_tx (endpoint_nop (ep_ctl_copy));
-
-      //Signal that there's a buffer ready for writing.
-      //delegate.handle_correct_tx
-      //( pma_buffer_t { buffer_descs         <- Replace with PMA_SPACE.span()
-      //  [ get_application_rx_buffer_index (ep_ctl_copy) ]
-      //});
-      
-      goto loop_again;
+  
+  if constexpr
+  ( std::is_base_of_v <endpoint_register_bidirectional_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_unidirectional_tx_t, decltype(ep_ctl_local)>
+  ) {
+    if (ep_ctl_local.ctr_tx) {
+      endpoint_sub_isr_tx
+        < sub_isr_delegate_ref, h_array_ref, sram_ranges_ref >
+        ( ep_ctl, ep_ctl_local );
     }
   }
 }
 
-template <typename...EP_CTL_T, typename ISR_DELEGATE_T>//, ISR_DELEGATE_T & isr_delegate>
-constexpr auto generate_sub_isr_jump_table (std::tuple <EP_CTL_T...> reg_types, ISR_DELEGATE_T & isr_delegate) {
-  auto fn_ptr_map = [&isr_delegate] (std::size_t index, auto ep_ctl)
-  -> void (*)(void) {
-    return & endpoint_sub_isr
-    < decltype (ep_ctl)
-    , isr_delegate
-    , usb1
-    , index
-    , 0x0400
-    , 0x0000
-    , usb1_sram
-    >;
-  };
+
+template
+< typename...ep_ctl_tagged_refs
+, typename...sram_ranges_refs
+, typename sub_isr_delegate_ref
+, typename h_array_ref
+>
+constexpr auto generate_sub_isr_jump_table
+( std::tuple <ep_ctl_tagged_refs...> reg_types  /* TODO:  zip SRAM ranges with endpoint type? */
+, std::tuple <sram_ranges_refs...> sram_ranges_types
+) {
+  static_assert (sizeof...(ep_ctl_tagged_refs) == sizeof...(sram_ranges_refs));
   
-  return [&reg_types, fn_ptr_map] <std::size_t...idx> (std::index_sequence <idx...> ) {
-    return std::array <void (*)(void), sizeof...(idx)> {
-      fn_ptr_map (idx, std::get <idx> (reg_types)) ...
+  return [] <std::size_t...idx> (std::index_sequence <idx...> ) {
+    return std::array <void (*)(void) noexcept, sizeof...(idx)> {
+      & endpoint_sub_isr
+      < std::tuple_element_t <idx, decltype(reg_types)>
+      , sub_isr_delegate_ref
+      , h_array_ref
+      , std::tuple_element_t <idx, decltype(sram_ranges_types)>
+      >
+      ...
     };
-  } (std::make_index_sequence <sizeof...(EP_CTL_T)> ());
+  } (std::make_index_sequence <sizeof...(ep_ctl_tagged_refs)> ());
 }
-
-
-
 
 
 }//end namespace usb

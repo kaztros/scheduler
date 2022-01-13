@@ -132,8 +132,7 @@ template
 auto max_span
 ( h_array <ram_size, btable_offset> & usb_sram
 , sram_range <BUFFER_SPANS_REF_T, sram_offset, max_size> range
-)
-{
+) {
   volatile uint8_t * start = & (usb_sram.b) [btable_offset + sram_offset];
   return std::span <volatile uint8_t, max_size> (start, start + max_size);
 }
