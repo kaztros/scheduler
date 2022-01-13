@@ -106,6 +106,15 @@ struct base_of_typefied
   constexpr base_t & operator * () noexcept { return static_cast <base_t &> (*typefied_t()); }
 };
 
+///@brief A typefied reference to a reinterpretation of a typeified reference.
+template <typename reint_t, typename typefied_t>
+struct reinterpreted_of_typefied
+: public typefied_methods <reint_t, base_of_typefied <reint_t, typefied_t> >
+{
+  constexpr operator reint_t &   () noexcept { return reinterpret_cast <reint_t &> ( *typefied_t());  }
+  constexpr reint_t & operator * () noexcept { return reinterpret_cast <reint_t &> ( *typefied_t());  }
+};
+
 /// @brief A typefied reference to a member of a typefied reference.
 /// @param member_t The type of the member.
 /// @param struct_t The type of the encapsulating struct.
@@ -118,8 +127,7 @@ template
 , typename typefied_t
 >
 struct member_of_typefied
-: public typefied_methods
-    <member_t, member_of_typefied <member_t, struct_t, m_ptr, typefied_t>>
+: public typefied_methods <member_t, member_of_typefied <member_t, struct_t, m_ptr, typefied_t>>
 {
   constexpr operator member_t &   () noexcept { return (*typefied_t()).*m_ptr; }
   constexpr member_t & operator * () noexcept { return (*typefied_t()).*m_ptr; }
@@ -145,7 +153,7 @@ struct typefied_indexable
 
 /// @brief inheritable ::index<> method, enable c-array case.
 template <typename dream_t, std::size_t N, typename self_t>
-struct typefied_indexable <dream_t[N], self_t> {
+struct typefied_indexable <dream_t [N], self_t> {
   template <std::size_t index>
   using index = index_of_typefied <dream_t, index, self_t>;
 };
@@ -197,8 +205,13 @@ struct typefied_methods
 : public typefied_indexable <dream_t, self_t>
 , public typefied_memberable <dream_t, self_t>
 {
+  using DREAM_T = dream_t;
+
   template <typename base_t>
   using base_member = base_of_typefied <base_t, self_t>;
+
+  template <typename reint_t>
+  using reinterpreted = reinterpreted_of_typefied <reint_t, self_t>;
 };
 
 /*----------------------------------------------------------------------------*/
@@ -206,10 +219,10 @@ struct typefied_methods
 /// @note All possible references start from here, to go around the global.
 template <auto & x>
 struct typeify
-: public typefied_methods <decltype(x), typeify <x>>
+: public typefied_methods <std::remove_reference_t <decltype(x)>, typeify <x>>
 {
-  using dream_t = decltype(x);
+  using DREAM_T = std::remove_reference_t <decltype(x)>;
 
-  operator dream_t &   () { return x; }
-  dream_t & operator * () { return x; }
+  operator DREAM_T &   () { return x; }
+  DREAM_T & operator * () { return x; }
 };
