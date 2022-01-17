@@ -1,4 +1,6 @@
 #pragma once
+#include <tuple>
+#include <type_traits>
 #include "llvm/ADT/Bitfields.h"
 
 /*----------------------------------------------------------------------------*/
@@ -65,7 +67,7 @@ constexpr Storage_t mask (llvm::Bitfield::Element <T, OFFSET, SIZE, MAX_VALUE>) 
   return BP::Umax << OFFSET;
 }
 
-/*------*/
+/*----------------------------------------------------------------------------*/
 /// @brief - CRTP provider of assignment to/from volatile.
 template <typename T>
 struct volatile_assign_by_raw {
@@ -89,11 +91,30 @@ struct volatile_assign_by_raw {
   }
 };
 
-/*------*/
+/*----------------------------------------------------------------------------*/
 /// @brief - Explicit conversion from volatile.
 template <typename T>
 T raw_snapshot_of (T const volatile & x) {
   T copy;
   copy._raw = x._raw;
   return copy;
+}
+
+/*----------------------------------------------------------------------------*/
+template <typename T, typename func> struct map_tuple_by_func;
+
+template <typename...T, typename func>
+struct map_tuple_by_func <std::tuple <T...>, func> {
+  using type = std::tuple <std::invoke_result_t <func, T> ...>;
+};
+
+template <typename T, typename func>
+using map_tuple_by_func_t = typename map_tuple_by_func <T, func> ::type;
+
+template <size_t Idx, class T>
+constexpr size_t tuple_element_offset () {
+  return static_cast <size_t>
+  ( reinterpret_cast <char*> (&std::get<Idx> (*reinterpret_cast <T*> (0)) )
+  - reinterpret_cast <char*> (0)
+  );
 }
