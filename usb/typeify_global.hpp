@@ -79,11 +79,19 @@ template <typename T>
 using weave_volatile_t = typename weave_volatile<T>::type;
 
 /*----------------------------------------------------------------------------*/
-template <std::size_t index, typename T>
-auto && get (T && t) noexcept { return std::get <index> (std::forward <T> (t)); }
+template <typename T>
+constexpr auto && get (T && t) noexcept { return std::forward <T> (t); }
 
-template <std::size_t index, typename T, std::size_t N>
-auto & get (T (&t) [N]) noexcept { static_assert (index < N); return t[index]; }
+template <std::size_t index, std::size_t...rest_idxs, typename T>
+constexpr auto && get (T && t) noexcept {
+  return get <rest_idxs...> (std::get <index> (std::forward <T> (t)));
+}
+
+template <std::size_t index, std::size_t...rest_idxs, typename T, std::size_t N>
+constexpr auto & get (T (&t) [N]) noexcept {
+  static_assert (index < N);
+  return get <rest_idxs...> (t[index]);
+}
 /*----------------------------------------------------------------------------*/
 /// @brief Provides accessor type-methods (member, index, base_member) for self_t.
 /// This is forward declared because every type provided by typefied_methods
