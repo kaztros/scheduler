@@ -368,8 +368,8 @@ void endpoint_sub_isr () noexcept {
   ep_ctl_local = ep_ctl;
 
   if constexpr
-  ( std::is_base_of_v <endpoint_register_bidirectional_t, decltype(ep_ctl_local)>
-  || std::is_base_of_v <endpoint_register_unidirectional_rx_t, decltype(ep_ctl_local)>
+  ( std::is_base_of_v <endpoint_register_bidir_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_rx_only_t, decltype(ep_ctl_local)>
   ) {
     if (ep_ctl_local.ctr_rx) {
       endpoint_sub_isr_rx
@@ -379,8 +379,8 @@ void endpoint_sub_isr () noexcept {
   }
   
   if constexpr
-  ( std::is_base_of_v <endpoint_register_bidirectional_t, decltype(ep_ctl_local)>
-  || std::is_base_of_v <endpoint_register_unidirectional_tx_t, decltype(ep_ctl_local)>
+  ( std::is_base_of_v <endpoint_register_bidir_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_tx_only_t, decltype(ep_ctl_local)>
   ) {
     if (ep_ctl_local.ctr_tx) {
       endpoint_sub_isr_tx

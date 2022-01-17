@@ -6,83 +6,24 @@
 
 namespace stm32l41xxx {
 namespace usb {
-/*
-/// @brief Restricted endpoint_register_t, that works as a single-buffered bi-directional register.
-struct endpoint_register_bidirectional_t
-: public endpoint_register_t
-, public volatile_assign_by_raw <endpoint_register_bidirectional_t>
-{
-  using volatile_assign_by_raw <endpoint_register_bidirectional_t> ::operator=;
-};
-
-/// @brief Restricted endpoint_register_t, that works as a double-buffered RX register.
-struct endpoint_register_unidirectional_rx_t
-: public volatile_assign_by_raw <endpoint_register_unidirectional_rx_t>
-{
-  union {
-    uint16_t _raw;
-    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> sw_buf;
-    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
-    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
-    BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
-  };
-  
-  /// @brief Pretend to be our base-register-type.
-  operator endpoint_register_t & ();
-};
-
-/// @brief Restricted endpoint_register_t, that works as a double-buffered RX register.
-struct endpoint_register_unidirectional_tx_t
-: public volatile_assign_by_raw <endpoint_register_unidirectional_tx_t>
-{
-  union {
-    uint16_t _raw;
-    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> sw_buf;
-  };
-  
-  /// @brief Pretend to be our base-register-type.
-  operator endpoint_register_t & ();
-};
-*/
-
-using endpoint_register_bidirectional_t = endpoint_register_bidir_t;
-using endpoint_register_unidirectional_rx_t = endpoint_register_rx_only_t;
-using endpoint_register_unidirectional_tx_t = endpoint_register_tx_only_t;
-
-
-/* Make sure these types are nothing more than their raw-equivalents. */
-static_assert (sizeof(endpoint_register_bidirectional_t) == sizeof(endpoint_register_bidirectional_t::_raw));
-static_assert (sizeof(endpoint_register_unidirectional_rx_t) == sizeof(endpoint_register_unidirectional_rx_t::_raw));
-static_assert (sizeof(endpoint_register_unidirectional_tx_t) == sizeof(endpoint_register_unidirectional_tx_t::_raw));
 
 /* Make sure these sequences are packed correctly. */
 static_assert(offsetof(buffer_span_t, byte_count) == sizeof(buffer_offset_t), "Compiler generates incorrect memory layout.");
 
 template <typename TAGGED>
 auto as_native_buffers_helper (TAGGED x) {
-    if constexpr (std::is_base_of_v <endpoint_register_bidirectional_t, TAGGED>) {
+    if constexpr (std::is_base_of_v <endpoint_register_bidir_t, TAGGED>) {
     return reinterpret_cast
     < std::tuple
       < pma_ram <TAGGED::TX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>>
       , pma_ram <TAGGED::RX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>>
       > *
     > (0);
-  } else if constexpr (std::is_base_of_v <endpoint_register_unidirectional_rx_t, TAGGED>) {
+  } else if constexpr (std::is_base_of_v <endpoint_register_rx_only_t, TAGGED>) {
     return reinterpret_cast
     < pma_ram <TAGGED::RX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>> (*) [2]>
     (0);
-  } else if constexpr (std::is_base_of_v<endpoint_register_unidirectional_tx_t, TAGGED>) {
+  } else if constexpr (std::is_base_of_v<endpoint_register_tx_only_t, TAGGED>) {
     return reinterpret_cast
     < pma_ram <TAGGED::TX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>> (*) [2]>
     (0);
@@ -227,38 +168,6 @@ struct sram_range {
     *BUFFER_SPANS_REF_T() = default_value ();
   }
 };
-/*
-template
-< std::size_t ram_size
-, std::size_t btable_offset
-, typename BUFFER_SPANS_REF_T
-, std::size_t sram_offset
-, std::size_t max_size
->
-std::span <volatile uint8_t> span
-( h_array <ram_size, btable_offset> & usb_sram
-, sram_range <BUFFER_SPANS_REF_T, sram_offset, max_size> range
-) {
-  buffer_count_t regs_copy = raw_snapshot_of <buffer_count_t> (* BUFFER_SPANS_REF_T ());
-                          // ^ avoid copying extra registers.
-  return { & (usb_sram.b) [btable_offset + sram_offset], regs_copy.byte_count };
-}
-
-template
-< std::size_t ram_size
-, std::size_t btable_offset
-, typename BUFFER_SPANS_REF_T
-, std::size_t sram_offset
-, std::size_t max_size
->
-auto max_span
-( h_array <ram_size, btable_offset> & usb_sram
-, sram_range <BUFFER_SPANS_REF_T, sram_offset, max_size> range
-) {
-  volatile uint8_t * start = & (usb_sram.b) [btable_offset + sram_offset];
-  return std::span <volatile uint8_t, max_size> (start, start + max_size);
-}
- */
 
 }//end namespace usb
 }//end namespace stm32l41xxx
