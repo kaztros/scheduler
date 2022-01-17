@@ -103,6 +103,7 @@ T raw_snapshot_of (T const volatile & x) {
 }
 
 /*----------------------------------------------------------------------------*/
+/*
 template <typename T, typename func> struct map_tuple_by_func;
 
 template <typename...T, typename func>
@@ -113,6 +114,6 @@ struct map_tuple_by_func <std::tuple <T...>, func> {
 template <typename T, typename func>
 using map_tuple_by_func_t = typename map_tuple_by_func <T, func> ::type;
 
-
+*/
 
 

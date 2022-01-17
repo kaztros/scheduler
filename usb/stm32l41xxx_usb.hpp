@@ -1,6 +1,7 @@
 #pragma once
 #include <tuple>
 #include "register_building.hpp"
+#include "type_traits_kaz.hpp"
 #include "typeify_global.hpp"
 #include "usb_standard.hpp"
 #include "stm32l41xxx_usb_protocols.hpp"

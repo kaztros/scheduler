@@ -1,4 +1,5 @@
 #include <span>
+#include "type_traits_kaz.hpp"
 #include "stm32l41xxx_usb.hpp"
 /// @brief This file contains register-type-sequences to mimic the actual layout in memory.
 /// @brief This file contains disambiguated register-types, for multi-mode registers.
