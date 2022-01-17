@@ -28,7 +28,7 @@ constexpr endpoint_type_e as_endpoint_type (transfer_type_e x) noexcept {
   //Flagrantly die.
 }
 
-endpoint_register_tx_only_t::operator endpoint_register_setup_t & () {
+endpoint_register_in_only_t::operator endpoint_register_setup_t & () {
   return * reinterpret_cast <endpoint_register_setup_t*> (this);
 }
 

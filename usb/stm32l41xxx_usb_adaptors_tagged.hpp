@@ -32,7 +32,7 @@ struct endpoint_register_unidirectional_rx_tagged_t
 
 template <typename...TAGS>
 struct endpoint_register_unidirectional_tx_tagged_t
-: public endpoint_register_tx_only_t
+: public endpoint_register_in_only_t
 , public volatile_assign_by_raw <endpoint_register_unidirectional_tx_tagged_t <TAGS...> >
 , TAGS ...
 {
@@ -380,7 +380,7 @@ void endpoint_sub_isr () noexcept {
   
   if constexpr
   ( std::is_base_of_v <endpoint_register_bidir_t, decltype(ep_ctl_local)>
-  || std::is_base_of_v <endpoint_register_tx_only_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_in_only_t, decltype(ep_ctl_local)>
   ) {
     if (ep_ctl_local.ctr_tx) {
       endpoint_sub_isr_tx

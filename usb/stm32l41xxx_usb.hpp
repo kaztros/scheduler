@@ -124,8 +124,8 @@ struct endpoint_register_out_only_t
 };
 
 ///@brief Restricted endpoint-register, double-buffered IN (device-tx) register
-struct endpoint_register_tx_only_t
-: public volatile_assign_by_raw <endpoint_register_tx_only_t>
+struct endpoint_register_in_only_t
+: public volatile_assign_by_raw <endpoint_register_in_only_t>
 {
   union {
     uint16_t _raw;
@@ -152,7 +152,7 @@ struct endpoint_register_t
     endpoint_register_bidir_t bidir;
     endpoint_register_setup_t setup;
     endpoint_register_out_only_t rx_only;
-    endpoint_register_tx_only_t tx_only;
+    endpoint_register_in_only_t tx_only;
   };
   
   /*

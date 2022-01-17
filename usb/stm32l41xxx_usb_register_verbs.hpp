@@ -68,7 +68,7 @@ constexpr EP_CTL_T release_rx_buffer (EP_CTL_T reg) {
 }
 
 constexpr auto commit_tx_buffer (auto reg) {
-  static_assert (std::is_base_of_v <endpoint_register_tx_only_t, decltype(reg)>);
+  static_assert (std::is_base_of_v <endpoint_register_in_only_t, decltype(reg)>);
   reg.sw_buf = 1;
   return reg;
 }
@@ -78,7 +78,7 @@ constexpr endpoint_register_bidir_t commit_tx_buffer (endpoint_register_bidir_t 
   return reg;
 }
 
-constexpr std::size_t get_application_tx_buffer_index (endpoint_register_tx_only_t ep_ctl) {
+constexpr std::size_t get_application_tx_buffer_index (endpoint_register_in_only_t ep_ctl) {
   return ep_ctl.sw_buf;
 }
 
