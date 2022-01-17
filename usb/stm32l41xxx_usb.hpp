@@ -81,68 +81,10 @@ struct device_address_register_t
   };
 };
 
-struct endpoint_register_t
-: public volatile_assign_by_raw <endpoint_register_t>
+///@brief Pre-initialization aspect of an endpoint-register.
+struct endpoint_register_setup_t
+: public volatile_assign_by_raw <endpoint_register_setup_t>
 {
-  struct bidir_t
-  : public endpoint_register_t
-  , public volatile_assign_by_raw <bidir_t>
-  {
-    union {
-      uint16_t _raw;
-      BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-      BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-      BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-      BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-      BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> sw_buf;
-    };
-    //using volatile_assign_by_raw <endpoint_register_bidirectional_t> ::operator=;
-  };
-
-  /// @brief Restricted endpoint_register_t, that works as a double-buffered RX register.
-  struct rx_only_t
-  : public volatile_assign_by_raw <rx_only_t>
-  {
-    union {
-      uint16_t _raw;
-      BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-      BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> sw_buf;
-      BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-      BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-      BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-      BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
-      BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
-      BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
-    };
-    
-    /// @brief Pretend to be our base-register-type.
-    operator endpoint_register_t & ();
-  };
-
-  /// @brief Restricted endpoint_register_t, that works as a double-buffered RX register.
-  struct endpoint_register_unidirectional_tx_t
-  : public volatile_assign_by_raw <endpoint_register_unidirectional_tx_t>
-  {
-    union {
-      uint16_t _raw;
-      BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-      BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
-      BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-      BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-      BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-      BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> sw_buf;
-    };
-    
-    /// @brief Pretend to be our base-register-type.
-    operator endpoint_register_t & ();
-  };
-  
-  
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
@@ -156,6 +98,77 @@ struct endpoint_register_t
     BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
     BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
   };
+  //using volatile_assign_by_raw <endpoint_register_setup_t> ::operator=;
+};
+
+///@brief Bidirectional aspect of an endpoint-register.
+using endpoint_register_bidir_t = endpoint_register_setup_t;
+
+/// @brief Restricted endpoint-register, that works as a double-buffered RX register.
+struct endpoint_register_rx_only_t
+: public volatile_assign_by_raw <endpoint_register_rx_only_t>
+{
+  union {
+    uint16_t _raw;
+    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
+    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> sw_buf;
+    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
+    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
+    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
+    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
+  };
+  
+  operator endpoint_register_setup_t & () noexcept;
+};
+
+///@brief Restricted endpoint_register_t, that works as a double-buffered RX register.
+struct endpoint_register_tx_only_t
+: public volatile_assign_by_raw <endpoint_register_tx_only_t>
+{
+  union {
+    uint16_t _raw;
+    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
+    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
+    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
+    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
+    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> sw_buf;
+  };
+  
+  /// @brief Pretend to be our base-register-type.
+  operator endpoint_register_setup_t & () noexcept;
+};
+
+///@brief Endpoint register union.
+struct endpoint_register_t
+: public volatile_assign_by_raw <endpoint_register_t>
+{
+  union {
+    uint16_t _raw;
+    endpoint_register_bidir_t bidir;
+    endpoint_register_setup_t setup;
+    endpoint_register_rx_only_t rx_only;
+    endpoint_register_tx_only_t tx_only;
+  };
+  
+  /*
+  union {
+    uint16_t _raw;
+    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
+    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
+    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
+    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
+    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
+  };*/
 };
 
 /// @brief Describes the offset of the USB packet buffers in packet-memory.

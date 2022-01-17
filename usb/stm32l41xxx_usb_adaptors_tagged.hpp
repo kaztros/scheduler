@@ -12,7 +12,7 @@ namespace usb {
 /*----------------------------------------------------------------------------*/
 template <typename...TAGS>
 struct endpoint_register_bidirectional_tagged_t
-: public endpoint_register_bidirectional_t
+: public endpoint_register_bidir_t
 , public volatile_assign_by_raw <endpoint_register_bidirectional_tagged_t <TAGS...> >
 , TAGS ...
 {
@@ -22,7 +22,7 @@ struct endpoint_register_bidirectional_tagged_t
 
 template <typename...TAGS>
 struct endpoint_register_unidirectional_rx_tagged_t
-: public endpoint_register_unidirectional_rx_t
+: public endpoint_register_rx_only_t
 , public volatile_assign_by_raw <endpoint_register_unidirectional_rx_tagged_t <TAGS...> >
 , TAGS ...
 {
@@ -32,7 +32,7 @@ struct endpoint_register_unidirectional_rx_tagged_t
 
 template <typename...TAGS>
 struct endpoint_register_unidirectional_tx_tagged_t
-: public endpoint_register_unidirectional_tx_t
+: public endpoint_register_tx_only_t
 , public volatile_assign_by_raw <endpoint_register_unidirectional_tx_tagged_t <TAGS...> >
 , TAGS ...
 {

@@ -6,7 +6,7 @@
 
 namespace stm32l41xxx {
 namespace usb {
-
+/*
 /// @brief Restricted endpoint_register_t, that works as a single-buffered bi-directional register.
 struct endpoint_register_bidirectional_t
 : public endpoint_register_t
@@ -54,6 +54,11 @@ struct endpoint_register_unidirectional_tx_t
   /// @brief Pretend to be our base-register-type.
   operator endpoint_register_t & ();
 };
+*/
+
+using endpoint_register_bidirectional_t = endpoint_register_bidir_t;
+using endpoint_register_unidirectional_rx_t = endpoint_register_rx_only_t;
+using endpoint_register_unidirectional_tx_t = endpoint_register_tx_only_t;
 
 
 /* Make sure these types are nothing more than their raw-equivalents. */
