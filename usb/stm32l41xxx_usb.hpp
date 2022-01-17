@@ -157,7 +157,7 @@ struct buffer_count_t
 {
   union {
     uint16_t _raw;
-    BitfieldMember <uint16_t, BFE <uint16_t,  0, 10>> byte_count;
+    BitfieldMember <uint16_t, BFE <std::size_t,  0, 10>> byte_count;
     BitfieldMember <uint16_t, BFE <uint16_t, 10,  5>> num_block;
     BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> bl_size;
   };
@@ -213,23 +213,23 @@ static_assert (8 == sizeof(buffer_spans_t));
 /* Make sure that these types match their data-sheet sizes: */
 static_assert (0x5C == sizeof(device_registers_t));
 
-template <std::size_t N = 1024, std::size_t BTABLE_OFFSET = 0x0000>
-struct h_array {
-  static_assert (BTABLE_OFFSET % 8 == 0, "BTABLE offset must be 8-byte aligned.");
 
+template <std::size_t byte_count = 1024, typename native_t = uint16_t>
+struct pma_ram {
+  static_assert ( byte_count % sizeof(native_t) == 0
+                , "contiguous bytes do not divide evenly by native_t.");
+  constexpr static auto INDICES = byte_count / sizeof(native_t);
+  constexpr static auto SIZE_IN_BYTES = byte_count;
+  
   union {
-    std::array <uint8_t volatile,  N  > b;
-    std::array <uint16_t volatile, N/2> h;
-    struct {
-      uint8_t _btable_spacing [BTABLE_OFFSET];  //Can't make this private.
-      weave_volatile_t <buffer_spans_t[8]> buffer_spanses;
-    };
+    native_t n [INDICES];
+    copy_cv_t <native_t, uint8_t> b [SIZE_IN_BYTES];
+    //Some hardware doesn't like doing byte-accesses.  Beware.
   };
 };
 
-
-extern device_registers_t volatile usb1;     // @ 0x4000'6800, APB1
-extern h_array <1024> usb1_sram;             // @ 0x4000'6C00, APB1
+extern device_registers_t volatile usb1;            // @ 0x4000'6800, APB1
+extern pma_ram <1024, volatile uint16_t> usb1_sram; // @ 0x4000'6C00, APB1
 
 }//end namespace usb
 }//end namespace stm32l41xxx

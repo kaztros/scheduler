@@ -1,6 +1,8 @@
 #pragma once
 #include <tuple>
 #include <type_traits>
+#include "typeify_global.hpp"
+
 #include "llvm/ADT/Bitfields.h"
 
 /*----------------------------------------------------------------------------*/
@@ -111,10 +113,6 @@ struct map_tuple_by_func <std::tuple <T...>, func> {
 template <typename T, typename func>
 using map_tuple_by_func_t = typename map_tuple_by_func <T, func> ::type;
 
-template <size_t Idx, class T>
-constexpr size_t tuple_element_offset () {
-  return static_cast <size_t>
-  ( reinterpret_cast <char*> (&std::get<Idx> (*reinterpret_cast <T*> (0)) )
-  - reinterpret_cast <char*> (0)
-  );
-}
+
+
+

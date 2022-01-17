@@ -9,7 +9,7 @@ buffer_span_t::buffer_span_t (buffer_span_t const volatile & rhs)
 { }
 
 device_registers_t volatile usb1;      // @ 0x4000'6800, APB1
-h_array <0x0400> usb1_sram;   // @ 0x4000'6C00, APB1
+extern pma_ram <1024, volatile uint16_t> usb1_sram;   // @ 0x4000'6C00, APB1
 
 }//end namespace usb
 }//end namespace stm32l41xxx

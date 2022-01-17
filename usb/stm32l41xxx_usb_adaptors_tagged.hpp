@@ -237,22 +237,22 @@ template
 >
 struct as_sram_range_types {
   static constexpr std::tuple <std::size_t, std::size_t> SIZES = max_sizes (EP_CTL_TAGGED_T());
-  static constexpr auto SIZE = get<0>(SIZES) + get<1>(SIZES);
+  static constexpr auto SIZE = std::get <0> (SIZES) + std::get <1> (SIZES);
   using array_type = std::tuple
-    < std::array <volatile uint8_t, get<0>(SIZES)>
-    , std::array <volatile uint8_t, get<1>(SIZES)>
+    < std::array <volatile uint8_t, std::get <0> (SIZES)>
+    , std::array <volatile uint8_t, std::get <1> (SIZES)>
     >;
   
   using type = std::tuple
     < sram_range
       < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
       , accumulated_bytes + 0
-      , get<0>(SIZES)
+      , std::get <0> (SIZES)
       >
     , sram_range
       < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
-      , accumulated_bytes + get<0>(SIZES)
-      , get<1>(SIZES)
+      , accumulated_bytes + std::get <0> (SIZES)
+      , std::get <1> (SIZES)
       >
     >;
 };
@@ -312,20 +312,24 @@ constexpr auto as_sram_range_from_ep_ctl_helper
 
 template
 < typename sub_isr_delegate_ref
-, typename h_array_ref
-, typename sram_ranges_ref
+, typename buffer_ctls_ref
+, typename buffer_datas_ref
 , typename ep_ctl_tagged_t
 >
 void endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
   ep_ctl = clear_ctr_rx (endpoint_nop (copy));
   
-  *sub_isr_delegate_ref().handle_correct_rx
-  ( span
-    ( *h_array_ref()
-    , *sram_ranges_ref() [get_application_rx_buffer_index (copy)]
-    )
-  , copy
-  );
+  if (0 == get_application_rx_buffer_index (copy)) {
+    *sub_isr_delegate_ref().handle_correct_rx
+     ( span<0> (*buffer_datas_ref(), *buffer_ctls_ref())
+     , *ep_ctl_tagged_t()
+     );
+  } else {
+    *sub_isr_delegate_ref().handle_correct_rx
+     ( span<1> (*buffer_datas_ref(), *buffer_ctls_ref())
+     , *ep_ctl_tagged_t()
+     );
+  }
 
   ep_ctl = release_rx_buffer (endpoint_nop (copy));
 }

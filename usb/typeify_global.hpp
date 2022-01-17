@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <tuple>
 #include <type_traits>
@@ -48,50 +49,87 @@
 /// //, & bar <greetings.dutch> -- invalid template argument.
 /// };
 ///
-/*----------------------------------------------------------------------------*/
-template <typename M, typename S>
-struct m_ptr {
-  using member_t = M;
-  using struct_t = S;
-};
-
-template <typename M, typename S>
-m_ptr<M, S> dissect (M S::*ptr) { return {}; }
-
-/*----------------------------------------------------------------------------*/
-template <typename T> struct weave_volatile { using type = volatile T; };
-
-template <typename T, std::size_t N>
-struct weave_volatile <T[N]>
-{ using helper = weave_volatile<T>::type;
-  using type = helper[N];
-};
-
-template <typename T, std::size_t N>
-struct weave_volatile <std::array <T, N>>
-{ using type = std::array <typename weave_volatile <T>::type, N>; };
-
-template <typename...Ts>
-struct weave_volatile <std::tuple <Ts...>>
-{ using type = std::tuple <typename weave_volatile <Ts>::type ...>; };
-
-template <typename T>
-using weave_volatile_t = typename weave_volatile<T>::type;
 
 /*----------------------------------------------------------------------------*/
 template <typename T>
-constexpr auto && get (T && t) noexcept { return std::forward <T> (t); }
+constexpr auto && getm (T && t) noexcept { return std::forward <T> (t); }
 
-template <std::size_t index, std::size_t...rest_idxs, typename T>
-constexpr auto && get (T && t) noexcept {
-  return get <rest_idxs...> (std::get <index> (std::forward <T> (t)));
-}
+// Being forward declaring because G++ can't overload off template definitions alone.
+//template <std::size_t index, std::size_t...rest_idxs, typename...Ts>
+//constexpr auto & getm (std::tuple <Ts...> & t) noexcept;
+
+//template <std::size_t index, std::size_t...rest_idxs, typename...Ts>
+//constexpr auto && getm (std::tuple <Ts...> && t) noexcept;
 
 template <std::size_t index, std::size_t...rest_idxs, typename T, std::size_t N>
-constexpr auto & get (T (&t) [N]) noexcept {
+constexpr auto & getm (T (&t) [N]) noexcept;
+
+//template <std::size_t index, std::size_t...rest_idxs, typename T>
+//constexpr auto && get (T && t) noexcept;
+// End G++-specific forward-declarations.
+
+
+//template <std::size_t index, std::size_t...rest_idxs, typename...Ts>
+//constexpr auto & getm (std::tuple <Ts...> & t) noexcept {
+//  return getm <rest_idxs...> (std::get <index> (t));
+//}
+
+//template <std::size_t index, std::size_t...rest_idxs, typename...Ts>
+//constexpr auto && getm (std::tuple <Ts...> && t) noexcept {
+//  return getm <rest_idxs...> (std::get <index> (t));
+//}
+
+template <std::size_t index, std::size_t...rest_idxs, typename T, std::size_t N>
+constexpr auto & getm (T (&t) [N]) noexcept {
   static_assert (index < N);
-  return get <rest_idxs...> (t[index]);
+  return getm <rest_idxs...> (t[index]);
 }
+
+template <std::size_t index, std::size_t...rest_idxs, typename T>
+constexpr auto && getm (T && t) noexcept {
+  return getm <rest_idxs...> (std::get <index> (std::forward <T> (t)));
+}
+
+/*----------------------------------------------------------------------------*/
+template <std::size_t index, typename T>
+struct tuple_element {
+  using type = std::tuple_element_t <index, T>;
+};
+
+template <std::size_t index, typename T, std::size_t N>
+struct tuple_element <index, T[N]> {
+  static_assert (index < N || N == 0);
+  using type = T;
+};
+
+template <std::size_t index, typename T>
+using tuple_element_t = typename tuple_element <index, T> ::type;
+
+/*----------------------------------------------------------------------------*/
+template <std::size_t I, typename Tuple>
+constexpr std::size_t element_offset() {
+  using element_t = tuple_element_t <I, Tuple>;
+  static_assert (!std::is_reference_v <element_t>);
+  
+  union {
+    char a [sizeof (Tuple)];
+    Tuple t{};
+  };
+  
+  auto* p = std::addressof (getm <I> (t));
+  //t.~Tuple();
+  //std::size_t off = 0;
+  for (std::size_t i = 0;; ++i) {
+    if (static_cast <void*> (a + i) == p) {
+      return i;
+    }
+  } /* ^ This is the dumbest constexpr work-around I've ever seen. */
+}
+
+template <std::size_t index, typename T>
+struct tuple_element_offset {
+  constexpr static std::size_t value = element_offset <index, T> ();
+};
 /*----------------------------------------------------------------------------*/
 /// @brief Provides accessor type-methods (member, index, base_member) for self_t.
 /// This is forward declared because every type provided by typefied_methods
