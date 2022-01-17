@@ -57,7 +57,7 @@ constexpr auto clear_ctr_tx (auto reg) { reg.ctr_tx = 0; return reg; }
 
 template <typename EP_CTL_T>
 constexpr EP_CTL_T release_rx_buffer (EP_CTL_T reg) {
-  if constexpr (std::is_base_of_v <endpoint_register_rx_only_t, EP_CTL_T>) {
+  if constexpr (std::is_base_of_v <endpoint_register_out_only_t, EP_CTL_T>) {
     reg.sw_buf = 1;   // Toggle sw_buf.
   } else if constexpr (std::is_base_of_v <endpoint_register_bidir_t, EP_CTL_T>) {
     reg.stat_rx = 0b01; // Toggles 0b10 (NAK) into 0b11 (VALID)
@@ -82,7 +82,7 @@ constexpr std::size_t get_application_tx_buffer_index (endpoint_register_tx_only
   return ep_ctl.sw_buf;
 }
 
-constexpr std::size_t get_application_rx_buffer_index (endpoint_register_rx_only_t ep_ctl) {
+constexpr std::size_t get_application_rx_buffer_index (endpoint_register_out_only_t ep_ctl) {
   return ep_ctl.sw_buf;
 }
 

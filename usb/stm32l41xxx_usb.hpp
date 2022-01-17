@@ -104,9 +104,9 @@ struct endpoint_register_setup_t
 ///@brief Bidirectional aspect of an endpoint-register.
 using endpoint_register_bidir_t = endpoint_register_setup_t;
 
-/// @brief Restricted endpoint-register, that works as a double-buffered RX register.
-struct endpoint_register_rx_only_t
-: public volatile_assign_by_raw <endpoint_register_rx_only_t>
+///@brief Restricted endpoint-register, double-buffered OUT (device-rx) register
+struct endpoint_register_out_only_t
+: public volatile_assign_by_raw <endpoint_register_out_only_t>
 {
   union {
     uint16_t _raw;
@@ -123,7 +123,7 @@ struct endpoint_register_rx_only_t
   operator endpoint_register_setup_t & () noexcept;
 };
 
-///@brief Restricted endpoint_register_t, that works as a double-buffered RX register.
+///@brief Restricted endpoint-register, double-buffered IN (device-tx) register
 struct endpoint_register_tx_only_t
 : public volatile_assign_by_raw <endpoint_register_tx_only_t>
 {
@@ -151,7 +151,7 @@ struct endpoint_register_t
     uint16_t _raw;
     endpoint_register_bidir_t bidir;
     endpoint_register_setup_t setup;
-    endpoint_register_rx_only_t rx_only;
+    endpoint_register_out_only_t rx_only;
     endpoint_register_tx_only_t tx_only;
   };
   

@@ -32,7 +32,7 @@ endpoint_register_tx_only_t::operator endpoint_register_setup_t & () {
   return * reinterpret_cast <endpoint_register_setup_t*> (this);
 }
 
-endpoint_register_rx_only_t::operator endpoint_register_setup_t & () {
+endpoint_register_out_only_t::operator endpoint_register_setup_t & () {
   return * reinterpret_cast <endpoint_register_setup_t*> (this);
 }
 

@@ -19,7 +19,7 @@ auto as_native_buffers_helper (TAGGED x) {
       , pma_ram <TAGGED::RX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>>
       > *
     > (0);
-  } else if constexpr (std::is_base_of_v <endpoint_register_rx_only_t, TAGGED>) {
+  } else if constexpr (std::is_base_of_v <endpoint_register_out_only_t, TAGGED>) {
     return reinterpret_cast
     < pma_ram <TAGGED::RX_BUFFER_SIZE, copy_cv_t <TAGGED, uint16_t>> (*) [2]>
     (0);
