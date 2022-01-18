@@ -11,33 +11,27 @@ namespace usb {
 
 /*----------------------------------------------------------------------------*/
 template <typename...TAGS>
-struct endpoint_register_bidirectional_tagged_t
+struct endpoint_register_bidir_tagged_t
 : public endpoint_register_bidir_t
-, public volatile_assign_by_raw <endpoint_register_bidirectional_tagged_t <TAGS...> >
+, public volatile_assign_by_raw <endpoint_register_bidir_tagged_t <TAGS...> >
 , TAGS ...
-{
-  using volatile_assign_by_raw <endpoint_register_bidirectional_tagged_t<TAGS...>>::operator=;
-};
+{ };
 
 
 template <typename...TAGS>
-struct endpoint_register_unidirectional_rx_tagged_t
+struct endpoint_register_out_only_tagged_t
 : public endpoint_register_out_only_t
-, public volatile_assign_by_raw <endpoint_register_unidirectional_rx_tagged_t <TAGS...> >
+, public volatile_assign_by_raw <endpoint_register_out_only_tagged_t <TAGS...> >
 , TAGS ...
-{
-  using volatile_assign_by_raw <endpoint_register_unidirectional_rx_tagged_t<TAGS...>>::operator=;
-};
+{ };
 
 
 template <typename...TAGS>
-struct endpoint_register_unidirectional_tx_tagged_t
+struct endpoint_register_in_only_tagged_t
 : public endpoint_register_in_only_t
-, public volatile_assign_by_raw <endpoint_register_unidirectional_tx_tagged_t <TAGS...> >
+, public volatile_assign_by_raw <endpoint_register_in_only_tagged_t <TAGS...> >
 , TAGS ...
-{
-  using volatile_assign_by_raw <endpoint_register_unidirectional_tx_tagged_t<TAGS...>>::operator=;
-};
+{ };
 
 /*----------------------------------------------------------------------------*/
 
@@ -61,7 +55,7 @@ template
 struct as_ep_moded_register_type
 {
   using type = std::tuple
-  < endpoint_register_bidirectional_tagged_t
+  < endpoint_register_bidir_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_rx_buffer_size_tag <rx_buffer_size>
@@ -79,12 +73,12 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, tx_buffer_size, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type > {
   
   using type = std::tuple
-  < endpoint_register_unidirectional_rx_tagged_t
+  < endpoint_register_out_only_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_rx_buffer_size_tag <rx_buffer_size>
     >
-  , endpoint_register_unidirectional_tx_tagged_t
+  , endpoint_register_in_only_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_tx_buffer_size_tag <tx_buffer_size>
@@ -101,7 +95,7 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, tx_buffer_size, true, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::ISOCHRONOUS != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_bidirectional_tagged_t
+  < endpoint_register_bidir_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_rx_buffer_size_tag <rx_buffer_size>
@@ -120,7 +114,7 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, 0, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_unidirectional_rx_tagged_t
+  < endpoint_register_out_only_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_rx_buffer_size_tag <rx_buffer_size>
@@ -138,7 +132,7 @@ template
 struct as_ep_moded_register_type <address, transfer_type, 0, tx_buffer_size, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_unidirectional_tx_tagged_t
+  < endpoint_register_in_only_tagged_t
     < endpoint_address_tag <address>
     , transfer_type_tag <transfer_type>
     , endpoint_tx_buffer_size_tag <tx_buffer_size>
@@ -205,7 +199,7 @@ struct as_isr_delegate <std::tuple<EP_CTL_T...>> {
 /*----------------------------------------------------------------------------*/
 template <typename...TAGS>
 constexpr std::tuple <std::size_t, std::size_t> max_sizes
-( endpoint_register_bidirectional_tagged_t <TAGS...> x )
+( endpoint_register_bidir_tagged_t <TAGS...> x )
 {
   //Hardware is laid out to have TX before RX on this board.
   return std::make_tuple (decltype(x)::TX_BUFFER_SIZE, decltype(x)::RX_BUFFER_SIZE);
@@ -213,7 +207,7 @@ constexpr std::tuple <std::size_t, std::size_t> max_sizes
 
 template <typename...TAGS>
 constexpr std::tuple <std::size_t, std::size_t> max_sizes
-( endpoint_register_unidirectional_rx_tagged_t <TAGS...> x )
+( endpoint_register_out_only_tagged_t <TAGS...> x )
 {
   //Hardware is laid out to have TX before RX on this board.
   return std::make_tuple (decltype(x)::RX_BUFFER_SIZE, decltype(x)::RX_BUFFER_SIZE);
@@ -221,7 +215,7 @@ constexpr std::tuple <std::size_t, std::size_t> max_sizes
 
 template <typename...TAGS>
 constexpr std::tuple <std::size_t, std::size_t> max_sizes
-( endpoint_register_unidirectional_tx_tagged_t <TAGS...> x )
+( endpoint_register_in_only_tagged_t <TAGS...> x )
 {
   //Hardware is laid out to have TX before RX on this board.
   return std::make_tuple (decltype(x)::TX_BUFFER_SIZE, decltype(x)::TX_BUFFER_SIZE);
@@ -298,10 +292,10 @@ constexpr auto as_sram_range_from_ep_ctl_helper
 
 //And I want that to generate the ISR code.
 //But this doesn't quite work.  It needs endpoint control types
-//endpoint_register_bidirectional_tagged_t      <0, ISOCHRONOUS, 64, 64>
-//endpoint_register_unidirectional_rx_tagged_t  <1, BULK       , 64,  0>
-//endpoint_register_unidirectional_tx_tagged_t  <1, BULK       ,  0, 64>
-//endpoint_register_unidirectional_tx_tagged_t  <2, ISOCHRONOUS,  0,  8>
+//endpoint_register_bidir_tagged_t    <0, CONTROL    , 64, 64>
+//endpoint_register_out_only_tagged_t <1, BULK       , 64,  0>
+//endpoint_register_in_only_tagged_t  <1, BULK       ,  0, 64>
+//endpoint_register_in_only_tagged_t  <2, ISOCHRONOUS,  0,  8>
 
 //which translates into:
 //isr_rx ([0], addr <0>, protocol)

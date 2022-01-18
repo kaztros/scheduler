@@ -5,7 +5,7 @@ namespace stm32l41xxx {
 namespace usb {
 
 template <typename...TAGS>
-constexpr auto endpoint_nop (endpoint_register_bidirectional_tagged_t <TAGS...> dummy) {
+constexpr auto endpoint_nop (endpoint_register_bidir_tagged_t <TAGS...> dummy) {
   endpoint_register_setup_t reg;  //Throw-away reg used for type-derived data.
   auto m = [reg] (auto x) { return mask <decltype(reg._raw)> (typename decltype(x)::ELEMENT_T ()); };
   
@@ -18,7 +18,7 @@ constexpr auto endpoint_nop (endpoint_register_bidirectional_tagged_t <TAGS...> 
 }
 
 template <typename...TAGS>
-constexpr auto endpoint_nop (endpoint_register_unidirectional_rx_tagged_t <TAGS...> dummy) {
+constexpr auto endpoint_nop (endpoint_register_out_only_tagged_t <TAGS...> dummy) {
   endpoint_register_setup_t reg;  //Throw-away reg used for type-derived data.
   decltype(dummy) result;
   auto m = [reg] (auto x) { return mask <decltype(reg._raw)> (typename decltype(x)::ELEMENT_T ()); };
@@ -30,7 +30,7 @@ constexpr auto endpoint_nop (endpoint_register_unidirectional_rx_tagged_t <TAGS.
 }
 
 template <typename...TAGS>
-constexpr auto endpoint_nop (endpoint_register_unidirectional_tx_tagged_t <TAGS...> dummy) {
+constexpr auto endpoint_nop (endpoint_register_in_only_tagged_t <TAGS...> dummy) {
   endpoint_register_setup_t reg;  //Throw-away reg used for type-derived data.
   decltype(dummy) result;
   auto m = [reg] (auto x) { return mask <decltype(reg._raw)> (typename decltype(x)::ELEMENT_T ()); };
