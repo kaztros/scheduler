@@ -1,7 +1,7 @@
 #pragma once
 #include <array>
 #include <tuple>
-#include <type_traits>
+#include "type_traits_kaz.hpp"
 
 /// "typeify" creates a constexpr type parameter referencing a global variable.
 ///
@@ -75,7 +75,7 @@ struct base_of_typefied
 ///@brief A typefied reference to a reinterpretation of a typeified reference.
 template <typename reint_t, typename typefied_t>
 struct reinterpreted_of_typefied
-: public typefied_methods <reint_t, base_of_typefied <reint_t, typefied_t> >
+: public typefied_methods <reint_t, reinterpreted_of_typefied <reint_t, typefied_t> >
 {
   constexpr operator reint_t &   () noexcept { return reinterpret_cast <reint_t &> ( *typefied_t());  }
   constexpr reint_t & operator * () noexcept { return reinterpret_cast <reint_t &> ( *typefied_t());  }
@@ -107,8 +107,8 @@ template <typename element_t, std::size_t index, typename typefied_t>
 struct index_of_typefied
 : public typefied_methods <element_t, index_of_typefied <element_t, index, typefied_t> >
 {
-  constexpr operator element_t &   () noexcept { return get <index> (*typefied_t()); }
-  constexpr element_t & operator * () noexcept { return get <index> (*typefied_t()); }
+  constexpr operator element_t &   () noexcept { return getm <index> (*typefied_t()); }
+  constexpr element_t & operator * () noexcept { return getm <index> (*typefied_t()); }
 };
 
 /*----------------------------------------------------------------------------*/
@@ -152,7 +152,11 @@ struct typefied_memberable {
 
   template <auto refless_t::*mm_ptr>
   using member = member_of_typefied
-    <typename decltype(dissect(mm_ptr))::member_t, refless_t, mm_ptr, self_t>;
+    < typename imply_cv <dream_t, typename decltype(dissect(mm_ptr))::member_t> ::type
+    , refless_t
+    , mm_ptr
+    , self_t
+    >;
 };
 
 /// @brief template specialization to disable non-unions and non-classes.
@@ -174,10 +178,11 @@ struct typefied_methods
   using DREAM_T = dream_t;
 
   template <typename base_t>
-  using base_member = base_of_typefied <base_t, self_t>;
+  using base_member = base_of_typefied <imply_cv_t <dream_t, base_t>, self_t>;
 
   template <typename reint_t>
-  using reinterpreted = reinterpreted_of_typefied <reint_t, self_t>;
+  using reinterpreted = reinterpreted_of_typefied
+    <imply_cv_t <dream_t, reint_t>, self_t>;
 };
 
 /*----------------------------------------------------------------------------*/

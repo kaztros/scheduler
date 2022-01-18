@@ -16,9 +16,30 @@ enum class endpoint_type_e : uint8_t {
   INTERRUPT = 0b11,
 };
 
-constexpr ::usb::Messages::Descriptor::transfer_type_e as_transfer_type (endpoint_type_e x) noexcept;
-constexpr endpoint_type_e as_endpoint_type (::usb::Messages::Descriptor::transfer_type_e x) noexcept;
+using ::usb::Messages::Descriptor::transfer_type_e;
 
+constexpr transfer_type_e as_transfer_type (endpoint_type_e x) noexcept {
+  // Hey C++?  This sucks.  The "good safe part" sucks to write, and the allowance of the last part sucks.
+  switch (x) {
+    case endpoint_type_e::BULK:        return transfer_type_e::BULK;
+    case endpoint_type_e::CONTROL:     return transfer_type_e::CONTROL;
+    case endpoint_type_e::ISOCHRONOUS: return transfer_type_e::ISOCHRONOUS;
+    case endpoint_type_e::INTERRUPT:   return transfer_type_e::INTERRUPT;
+  }
+  //return ::usb::Messages::Descriptor::transfer_type_e (0b100);
+  //Flagrantly die.
+}
+
+constexpr endpoint_type_e as_endpoint_type (transfer_type_e x) noexcept {
+  switch (x) {
+    case transfer_type_e::BULK:        return endpoint_type_e::BULK;
+    case transfer_type_e::CONTROL:     return endpoint_type_e::CONTROL;
+    case transfer_type_e::ISOCHRONOUS: return endpoint_type_e::ISOCHRONOUS;
+    case transfer_type_e::INTERRUPT:   return endpoint_type_e::INTERRUPT;
+  }
+  //return endpoint_type_e (0b100);
+  //Flagrantly die.
+}
 
 enum class transaction_direction_e : uint8_t {
   CTR_TX_IN = 0,    //The device transmits.  The bus does an "IN" transaction.
@@ -111,7 +132,7 @@ struct endpoint_register_out_only_t
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> sw_buf;
+    BitfieldMember <uint16_t, BFE <std::size_t,  6,  1>> sw_buf;
     BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
     BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
     BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
@@ -136,7 +157,7 @@ struct endpoint_register_in_only_t
     BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
     BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
     BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> sw_buf;
+    BitfieldMember <uint16_t, BFE <std::size_t, 14,  1>> sw_buf;
   };
   
   /// @brief Pretend to be our base-register-type.
@@ -155,20 +176,9 @@ struct endpoint_register_t
     endpoint_register_in_only_t tx_only;
   };
   
-  /*
-  union {
-    uint16_t _raw;
-    BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
-    BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
-    BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
-    BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
-    BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
-    BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
-  };*/
+  constexpr operator endpoint_register_bidir_t & () { return bidir; }
+  constexpr operator endpoint_register_out_only_t & () { return rx_only; }
+  constexpr operator endpoint_register_in_only_t & () { return tx_only; }
 };
 
 /// @brief Describes the offset of the USB packet buffers in packet-memory.

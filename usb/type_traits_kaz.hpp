@@ -11,19 +11,6 @@
 /// tuple_element_offset, this isn't std.  But ought to be.
 
 /*----------------------------------------------------------------------------*/
-///@brief Type-storage struct for dissect down below.
-template <typename M, typename S>
-struct member_of_struct_types {
-  using member_t = M;
-  using struct_t = S;
-};
-
-///@brief Change a pointer-to-struct-member into type information.
-template <typename M, typename S>
-constexpr member_of_struct_types <M, S> dissect (M S::*ptr) noexcept
-{ return {}; }
-
-/*----------------------------------------------------------------------------*/
 ///@brief std::add_volatile_t, but for container's types.
 template <typename T> struct weave_volatile { using type = volatile T; };
 
@@ -69,6 +56,39 @@ struct copy_cv {
 
 template <typename src_t, typename dst_t>
 using copy_cv_t = typename copy_cv <src_t, dst_t> ::type;
+
+/*----------------------------------------------------------------------------*/
+///@brief Add cv-qualifiers to dst_t from src_t, if they're there.
+///@details Does not remove cv-qualifiers.
+///@note src_t as a container is undefined.
+template <typename src_t, typename dst_t>
+struct imply_cv {
+  template <typename D>
+  using maybe_v_t = std::conditional_t
+  <std::is_volatile_v <src_t>, weave_volatile_t <D>, D>;
+  
+  template <typename D>
+  using maybe_c_t = std::conditional_t
+  <std::is_const_v <src_t>, std::add_const_t <D>, D>;
+  
+  using type = maybe_c_t <maybe_v_t <dst_t>>;
+};
+
+template <typename src_t, typename dst_t>
+using imply_cv_t = typename imply_cv <src_t, dst_t> ::type;
+
+/*----------------------------------------------------------------------------*/
+///@brief Type-storage struct for dissect down below.
+template <typename M, typename S>
+struct member_of_struct_types {
+  using member_t = M;
+  using struct_t = S;
+};
+
+///@brief Change a pointer-to-struct-member into type information.
+template <typename M, typename S>
+constexpr member_of_struct_types <M, S> dissect (M S::*ptr) noexcept
+{ return {}; }
 
 /*----------------------------------------------------------------------------*/
 ///@brief std::get, but with support for multi-index dimensions.

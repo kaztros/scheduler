@@ -8,7 +8,7 @@ namespace usb {
 
 using ::usb::Messages::Descriptor::transfer_type_e;
 
-using USB_CDC_Spec = decltype
+using USB_CDC_device_endpoint_register_types = decltype
 ( std::tuple_cat
   ( as_ep_moded_register_type <0, transfer_type_e::CONTROL,   64, 64> ::type ()
   , as_ep_moded_register_type <1, transfer_type_e::BULK,      64, 64> ::type ()
@@ -16,28 +16,17 @@ using USB_CDC_Spec = decltype
   )
 );
 
-using cdc_btable_space_t = btable_space_t <1024, 0x0, USB_CDC_Spec>;
+using cdc_btable_space_t = btable_space_t <1024, 0x0, USB_CDC_device_endpoint_register_types>;
 
-cdc_btable_space_t cdc_buffers;
+/*cdc_btable_space_t cdc_buffers;
 
 auto do_crime () {
   cdc_buffers.init_hw();
-  return span <2,0> (cdc_buffers);
+  return span <3,0> (cdc_buffers);
 }
-
-/*
-using sram_ranges_t =
-  decltype
-  ( as_sram_range_from_ep_ctl_helper
-    < typeify <usb1_sram> :: member<& decltype(usb1_sram)::buffer_spanses>
-    , 0
-    , 8 * std::tuple_size_v <USB_CDC_Spec>
-    >
-    (std::tuple<>(), USB_CDC_Spec())
-  );
 */
 struct dummy_delegate
-: public as_isr_delegate <USB_CDC_Spec> ::type
+: public as_isr_delegate <USB_CDC_device_endpoint_register_types> ::type
 {
   void handle_correct_rx (std::span <uint8_t volatile>, endpoint_address_tag <0>) noexcept override {
     
@@ -61,8 +50,45 @@ struct dummy_delegate
 
 dummy_delegate the_delegate;
 
-as_sub_isr_delegate_t <std::tuple_element <0, USB_CDC_Spec> ::type> & the_delegate_0 = the_delegate;
+template <typename usb_dev_ref, typename T> struct bind_eps;
 
+template <typename usb_dev_ref, typename...Ts>
+struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
+  using tuple_t = std::tuple <Ts...>;
+  using usb_dev_t = typename usb_dev_ref::DREAM_T;
+  
+  template <std::size_t idx>
+  using ep_ctl_tagged_by_idx = tuple_element_t <idx, tuple_t>;
+  
+  template <std::size_t idx>
+  using type_by_index = typename usb_dev_ref
+    ::member <&usb_dev_t::ep>
+    ::index <idx>
+    ::base_member <endpoint_register_t>
+    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
+  ;
+  
+  constexpr static auto helper() {
+    return [] <std::size_t...idx> (std::index_sequence<idx...>) {
+      return std::tuple <type_by_index <idx> ...> ();
+    } (std::make_index_sequence <sizeof...(Ts)> ());
+  }
+  
+  using type = decltype (helper());
+};
+
+using bound_eps = typename bind_eps
+  < typeify <usb1>
+  , USB_CDC_device_endpoint_register_types
+  > ::type;
+
+auto some_drunk_idiot =
+generate_sub_isr_jump_table_helper
+< typeify <the_delegate>
+, typeify <usb1_sram> ::reinterpreted <cdc_btable_space_t>
+, bound_eps
+>
+::doit ();
 
 }//end namespace usb
 }//end namespace stm32l41xxx

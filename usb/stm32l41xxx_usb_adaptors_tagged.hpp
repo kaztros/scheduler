@@ -15,7 +15,10 @@ struct endpoint_register_bidir_tagged_t
 : public endpoint_register_bidir_t
 , public volatile_assign_by_raw <endpoint_register_bidir_tagged_t <TAGS...> >
 , TAGS ...
-{ };
+{
+  //g++ needs this apparently:
+  using volatile_assign_by_raw <endpoint_register_bidir_tagged_t <TAGS...> >::operator=;
+};
 
 
 template <typename...TAGS>
@@ -23,7 +26,9 @@ struct endpoint_register_out_only_tagged_t
 : public endpoint_register_out_only_t
 , public volatile_assign_by_raw <endpoint_register_out_only_tagged_t <TAGS...> >
 , TAGS ...
-{ };
+{
+  using volatile_assign_by_raw <endpoint_register_out_only_tagged_t <TAGS...> >::operator=;
+};
 
 
 template <typename...TAGS>
@@ -31,7 +36,9 @@ struct endpoint_register_in_only_tagged_t
 : public endpoint_register_in_only_t
 , public volatile_assign_by_raw <endpoint_register_in_only_tagged_t <TAGS...> >
 , TAGS ...
-{ };
+{
+  using volatile_assign_by_raw <endpoint_register_in_only_tagged_t <TAGS...> >::operator=;
+};
 
 /*----------------------------------------------------------------------------*/
 
@@ -220,74 +227,6 @@ constexpr std::tuple <std::size_t, std::size_t> max_sizes
   //Hardware is laid out to have TX before RX on this board.
   return std::make_tuple (decltype(x)::TX_BUFFER_SIZE, decltype(x)::TX_BUFFER_SIZE);
 }
-
-/*----------------------------------------------------------------------------*/
-
-template
-< typename BTABLE_REF_TYPEFIED
-, std::size_t EP_CTL_IDX
-, typename EP_CTL_TAGGED_T
-, std::size_t accumulated_bytes
->
-struct as_sram_range_types {
-  static constexpr std::tuple <std::size_t, std::size_t> SIZES = max_sizes (EP_CTL_TAGGED_T());
-  static constexpr auto SIZE = std::get <0> (SIZES) + std::get <1> (SIZES);
-  using array_type = std::tuple
-    < std::array <volatile uint8_t, std::get <0> (SIZES)>
-    , std::array <volatile uint8_t, std::get <1> (SIZES)>
-    >;
-  
-  using type = std::tuple
-    < sram_range
-      < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
-      , accumulated_bytes + 0
-      , std::get <0> (SIZES)
-      >
-    , sram_range
-      < typename BTABLE_REF_TYPEFIED::index<EP_CTL_IDX>::index<0>
-      , accumulated_bytes + std::get <0> (SIZES)
-      , std::get <1> (SIZES)
-      >
-    >;
-};
-
-template
-< typename BTABLE_REF_TYPEFIED
-, std::size_t EP_CTL_IDX
-, std::size_t ACCUMULATED_BYTES
-, typename...SR_RANGES
->
-constexpr auto as_sram_range_from_ep_ctl_helper
-  ( std::tuple <SR_RANGES...> acc
-  , std::tuple <> in
-  )
-{ return acc; };
-
-template
-< typename BTABLE_REF_TYPEFIED
-, std::size_t EP_CTL_IDX
-, std::size_t ACCUMULATED_BYTES
-, typename...SR_RANGES
-, typename EP_CTL_TAGGED_T
-, typename...EP_REST>
-constexpr auto as_sram_range_from_ep_ctl_helper
-  ( std::tuple <SR_RANGES...> acc
-  , std::tuple <EP_CTL_TAGGED_T, EP_REST...> in
-  )
-{
-  using T = as_sram_range_types <BTABLE_REF_TYPEFIED, EP_CTL_IDX, EP_CTL_TAGGED_T, ACCUMULATED_BYTES>;
-  
-  return as_sram_range_from_ep_ctl_helper
-    < BTABLE_REF_TYPEFIED
-    , EP_CTL_IDX + 1
-    , ACCUMULATED_BYTES + T::SIZE
-    >
-    ( std::tuple <SR_RANGES... , typename T::type> ()
-    , std::tuple <EP_REST...> ()
-    );
-};
-
-
 /*----------------------------------------------------------------------------*/
 
 //And I want that to generate the ISR code.
@@ -310,18 +249,18 @@ template
 , typename buffer_datas_ref
 , typename ep_ctl_tagged_t
 >
-void endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+void inline endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
   ep_ctl = clear_ctr_rx (endpoint_nop (copy));
   
   if (0 == get_application_rx_buffer_index (copy)) {
-    *sub_isr_delegate_ref().handle_correct_rx
-     ( span<0> (*buffer_datas_ref(), *buffer_ctls_ref())
-     , *ep_ctl_tagged_t()
+    (*sub_isr_delegate_ref()).handle_correct_rx
+     ( span (getm<0> (*buffer_datas_ref()), getm<0> (*buffer_ctls_ref()))
+     , copy
      );
   } else {
-    *sub_isr_delegate_ref().handle_correct_rx
-     ( span<1> (*buffer_datas_ref(), *buffer_ctls_ref())
-     , *ep_ctl_tagged_t()
+    (*sub_isr_delegate_ref()).handle_correct_rx
+     ( span (getm<1> (*buffer_datas_ref()), getm<1> (*buffer_ctls_ref()))
+     , copy
      );
   }
 
@@ -330,20 +269,24 @@ void endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t cop
 
 template
 < typename sub_isr_delegate_ref
-, typename h_array_ref
-, typename sram_ranges_ref
+, typename buffer_ctls_ref
+, typename buffer_datas_ref
 , typename ep_ctl_tagged_t
 >
-void endpoint_sub_isr_tx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+void inline endpoint_sub_isr_tx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
   ep_ctl = clear_ctr_tx (endpoint_nop (copy));
   
-  *sub_isr_delegate_ref().handle_correct_tx
-  ( max_span
-    ( *h_array_ref()
-    , *sram_ranges_ref() [get_application_tx_buffer_index (copy)]
-    )
-  , copy
-  );
+  if (0 == get_application_tx_buffer_index (copy)) {
+    (*sub_isr_delegate_ref()).handle_correct_tx
+    ( max_span (getm<0> (*buffer_datas_ref()))
+    , copy
+    );
+  } else {
+    (*sub_isr_delegate_ref()).handle_correct_tx
+    ( max_span (getm<1> (*buffer_datas_ref()))
+    , copy
+    );
+  }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -352,11 +295,11 @@ void endpoint_sub_isr_tx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t cop
 template
 < typename ep_ctl_tagged_ref
 , typename sub_isr_delegate_ref
-, typename h_array_ref
-, typename sram_ranges_ref
+, typename buffer_ctls_ref
+, typename buffer_datas_ref
 >
 void endpoint_sub_isr () noexcept {
-  auto volatile & ep_ctl = *ep_ctl_tagged_ref();
+  auto & ep_ctl = *ep_ctl_tagged_ref();
   std::decay_t <decltype (ep_ctl)> ep_ctl_local;
   
   ep_ctl_local = ep_ctl;
@@ -367,7 +310,7 @@ void endpoint_sub_isr () noexcept {
   ) {
     if (ep_ctl_local.ctr_rx) {
       endpoint_sub_isr_rx
-        < sub_isr_delegate_ref, h_array_ref, sram_ranges_ref >
+        < sub_isr_delegate_ref, buffer_ctls_ref, buffer_datas_ref >
         ( ep_ctl, ep_ctl_local );
     }
   }
@@ -378,7 +321,7 @@ void endpoint_sub_isr () noexcept {
   ) {
     if (ep_ctl_local.ctr_tx) {
       endpoint_sub_isr_tx
-        < sub_isr_delegate_ref, h_array_ref, sram_ranges_ref >
+        < sub_isr_delegate_ref, buffer_ctls_ref, buffer_datas_ref >
         ( ep_ctl, ep_ctl_local );
     }
   }
@@ -386,29 +329,52 @@ void endpoint_sub_isr () noexcept {
 
 
 template
-< typename...ep_ctl_tagged_refs
-, typename...sram_ranges_refs
-, typename sub_isr_delegate_ref
-, typename h_array_ref
+< typename sub_isr_delegate_ref
+, typename btable_space_ref
+, typename tuple_t
 >
-constexpr auto generate_sub_isr_jump_table
-( std::tuple <ep_ctl_tagged_refs...> reg_types  /* TODO:  zip SRAM ranges with endpoint type? */
-, std::tuple <sram_ranges_refs...> sram_ranges_types
-) {
-  static_assert (sizeof...(ep_ctl_tagged_refs) == sizeof...(sram_ranges_refs));
-  
-  return [] <std::size_t...idx> (std::index_sequence <idx...> ) {
-    return std::array <void (*)(void) noexcept, sizeof...(idx)> {
-      & endpoint_sub_isr
-      < std::tuple_element_t <idx, decltype(reg_types)>
-      , sub_isr_delegate_ref
-      , h_array_ref
-      , std::tuple_element_t <idx, decltype(sram_ranges_types)>
-      >
-      ...
-    };
-  } (std::make_index_sequence <sizeof...(ep_ctl_tagged_refs)> ());
-}
+struct generate_sub_isr_jump_table_helper;
+
+template
+< typename sub_isr_delegate_ref
+, typename btable_space_ref
+, typename...ep_ctl_tagged_refs
+>
+struct generate_sub_isr_jump_table_helper
+<sub_isr_delegate_ref, btable_space_ref, std::tuple<ep_ctl_tagged_refs...>>
+{
+  using tuple_t = std::tuple <ep_ctl_tagged_refs...>;
+  using btable_space_t = btable_space_ref::DREAM_T;
+
+  template <std::size_t idx>
+  using sub_isr_delegate_ref_by_index = typename sub_isr_delegate_ref
+    ::base_member
+      < as_sub_isr_delegate_t
+        < typename tuple_element_t <idx, tuple_t>::DREAM_T >
+      >;
+
+  template <std::size_t idx>
+  using ctls_ref_by_index = typename btable_space_ref
+    ::member <&btable_space_t::ctlses> ::index <idx>;
+
+  template <std::size_t idx>
+  using datas_ref_by_index = typename btable_space_ref
+    ::member <&btable_space_t::datases> ::index <idx>;
+
+  constexpr static auto doit () {
+    return [] <std::size_t...idx> (std::index_sequence <idx...>) {
+      return std::array <void (*)(void) noexcept, sizeof...(idx)> {
+        & endpoint_sub_isr
+        < tuple_element_t <idx, tuple_t>
+        , sub_isr_delegate_ref_by_index <idx>
+        , ctls_ref_by_index <idx>
+        , datas_ref_by_index <idx>
+        >
+        ...
+      };
+    } (std::make_index_sequence <sizeof...(ep_ctl_tagged_refs)> ());
+  }
+};
 
 
 }//end namespace usb

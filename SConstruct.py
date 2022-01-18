@@ -20,7 +20,7 @@ env.Append(CXXFLAGS=['-static-libstdc++'])
 env.Append(CXXFLAGS=['-Wno-pmf-conversions'])
 env.Append(CXXFLAGS=['-Wno-invalid-offsetof'])
 
-OptimizationLevel = ['-Og', '-gdwarf-3']
+OptimizationLevel = ['-O3', '-gdwarf-3']
 #OptimizationLevel = ['-O3', '-flto']
 env.Append(CXXFLAGS=OptimizationLevel, CFLAGS=OptimizationLevel, LINKFLAGS=OptimizationLevel)
 

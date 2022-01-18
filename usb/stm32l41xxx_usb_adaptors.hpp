@@ -49,15 +49,12 @@ template
 struct btable_space_t <n_bytes, btable_offset, std::tuple <EP_MODED_CTL_Ts...>> {
   static_assert (btable_offset % 8 == 0, "BTABLE offset must be 8-byte aligned.");
   
-  template <typename T>
-  using map_buffer_t = as_native_buffers_t <T>;
-  
 private:
   uint8_t reserved_space [btable_offset];
   //^ Not a std::array, becuase 0-length std::array takes up one byte >:[.
 public:
   buffer_spans_t ctlses [sizeof...(EP_MODED_CTL_Ts)];
-  std::tuple <map_buffer_t <EP_MODED_CTL_Ts> ...> datases;
+  std::tuple <as_native_buffers_t <EP_MODED_CTL_Ts> ...> datases;
   //Not sure if datases are offset by BTABLE.offset.  Like it might be cool to
   //allocate the ctlses at the end of the USB SRAM.
   
@@ -104,8 +101,6 @@ public:
     } (std::index_sequence_for <EP_MODED_CTL_Ts...> ());
   }
   
-
-  
 };
 
 
@@ -118,7 +113,12 @@ auto span ( pma_ram <size, T> & data
 
 template <std::size_t size, typename T>
 auto max_span ( pma_ram <size, T> & data) {
-  return std::span (data.b);
+  if constexpr (0 == size) {  // C++ _hates_ zero-length arrays.
+    return std::span <uint8_t, 0> (& data.b [0], & data.b [0]);
+  } else {
+    return std::span (data.b);
+  }
+  
 }
 
 template
@@ -140,34 +140,6 @@ auto max_span (btable_space_t <n_bytes, btable_offset, std::tuple<EP_MODED_CTL_T
   return max_span (getm <ep_ctl_idx, buffer_idx> (_this.datases));
 }
 
-
-template <typename BUFFER_SPANS_REF_T, std::size_t offset, std::size_t max_size>
-struct sram_range {
-  static constexpr auto MAX_SIZE = max_size;
-  
-  static constexpr buffer_span_t default_value () {
-    buffer_span_t result;
-
-    result.byte_count = 0;
-    result.addr = offset;
-
-    if constexpr (0 == (max_size % 2) && max_size < 64) {
-      result.bl_size = 0;
-      result.num_block = max_size / 2;
-    } else if constexpr (0 == (max_size % 32) && max_size <= 1024) {
-      result.bl_size = 1;
-      result.num_block = (max_size / 32) - 1;
-    } else {
-      static_assert ("Unhandled length type.");
-    }
-    
-    return result;
-  }
-  
-  void init_hw() {
-    *BUFFER_SPANS_REF_T() = default_value ();
-  }
-};
 
 }//end namespace usb
 }//end namespace stm32l41xxx
