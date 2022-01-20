@@ -50,7 +50,7 @@ struct dummy_delegate
 
 dummy_delegate the_delegate;
 
-template <typename usb_dev_ref, typename T> struct bind_eps;
+template <typename usb_dev_ref, typename T> struct bind_endpoint_registers;
 
 template <typename usb_dev_ref, typename...Ts>
 struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
@@ -65,10 +65,10 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
     ::member <&usb_dev_t::ep>
     ::index <idx>
     ::base_member <endpoint_register_t>
-    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
+    ::reinterpreted <transactive_t <ep_ctl_tagged_by_idx <idx>>>
   ;
   
-  constexpr static auto helper() {
+  constexpr static auto helper () {
     return [] <std::size_t...idx> (std::index_sequence<idx...>) {
       return std::tuple <type_by_index <idx> ...> ();
     } (std::make_index_sequence <sizeof...(Ts)> ());
@@ -77,7 +77,7 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
   using type = decltype (helper());
 };
 
-using bound_eps = typename bind_eps
+using bound_eps = typename bind_endpoint_registers
   < typeify <usb1>
   , USB_CDC_device_endpoint_register_types
   > ::type;

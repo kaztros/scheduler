@@ -70,7 +70,7 @@ constexpr Storage_t mask (llvm::Bitfield::Element <T, OFFSET, SIZE, MAX_VALUE>) 
 }
 
 /*----------------------------------------------------------------------------*/
-/// @brief - CRTP provider of assignment to/from volatile.
+/// @brief CRTP provider of assignment to/from volatile.
 template <typename T>
 struct volatile_assign_by_raw {
   T clone () volatile {
@@ -90,6 +90,56 @@ struct volatile_assign_by_raw {
     auto _this = static_cast <T*> (this);
     _this->_raw = rhs._raw;
     return *_this;
+  }
+};
+
+/*----------------------------------------------------------------------------*/
+//@brief new-type to distinguish transactions.
+template <typename REGISTER_T>
+struct transaction_t {
+  REGISTER_T transaction;
+  REGISTER_T original;
+  
+  transaction_t (REGISTER_T snapshot) noexcept;
+};
+
+
+///@brief Container for registers that use transactions of the same type.
+///@note This is an advanced form of volatile, where even assignment can't
+///guarantee equvalence.
+template <typename REGISTER_T>
+struct transactive_t
+: public REGISTER_T
+{
+  //Do not allow assignment between the same types:
+  transactive_t () = default;
+  transactive_t (transactive_t <REGISTER_T> const &) = delete;
+  transactive_t (transactive_t <REGISTER_T> &&) = delete;
+  transactive_t & operator= (transactive_t <REGISTER_T> const &) = delete;
+  transactive_t & operator= (transactive_t <REGISTER_T> &&) = delete;
+
+  //Allow manual static-cast copy.
+  REGISTER_T operator() () volatile {
+    return *this;
+  }
+  
+  //Allow automatic static-cast copy.
+  operator REGISTER_T () volatile {
+    return *this;
+  }
+  
+  transaction_t <REGISTER_T> operator++() volatile { return transaction_t (raw_snapshot_of <REGISTER_T> (*this)); }
+
+  ///@note GCC spits out large essays when this returns a volatile reference.
+  void operator= (transaction_t <REGISTER_T> x) volatile {
+    this->_raw = x.transaction._raw;
+    //return *this;
+  }
+  
+  ///@note Because of the volatile variant, this one returns void too.
+  void operator= (transaction_t <REGISTER_T> x) {
+    this->_raw = x.transaction._raw;
+    //return *this;
   }
 };
 
