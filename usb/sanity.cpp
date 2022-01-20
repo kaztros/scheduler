@@ -65,7 +65,7 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
     ::member <&usb_dev_t::ep>
     ::index <idx>
     ::base_member <endpoint_register_t>
-    ::reinterpreted <transactive_t <ep_ctl_tagged_by_idx <idx>>>
+    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
   ;
   
   constexpr static auto helper () {

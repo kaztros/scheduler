@@ -62,11 +62,13 @@ template
 struct as_ep_moded_register_type
 {
   using type = std::tuple
-  < endpoint_register_bidir_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_rx_buffer_size_tag <rx_buffer_size>
-    , endpoint_tx_buffer_size_tag <tx_buffer_size>
+  < ::transactive_t
+    < endpoint_register_bidir_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_rx_buffer_size_tag <rx_buffer_size>
+      , endpoint_tx_buffer_size_tag <tx_buffer_size>
+      >
     >
   >;
 };
@@ -80,15 +82,19 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, tx_buffer_size, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type > {
   
   using type = std::tuple
-  < endpoint_register_out_only_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_rx_buffer_size_tag <rx_buffer_size>
+  < ::transactive_t
+    < endpoint_register_out_only_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_rx_buffer_size_tag <rx_buffer_size>
+      >
     >
-  , endpoint_register_in_only_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_tx_buffer_size_tag <tx_buffer_size>
+  , ::transactive_t
+    < endpoint_register_in_only_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_tx_buffer_size_tag <tx_buffer_size>
+      >
     >
   >;
 };
@@ -102,11 +108,13 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, tx_buffer_size, true, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::ISOCHRONOUS != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_bidir_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_rx_buffer_size_tag <rx_buffer_size>
-    , endpoint_tx_buffer_size_tag <tx_buffer_size>
+  < ::transactive_t
+    < endpoint_register_bidir_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_rx_buffer_size_tag <rx_buffer_size>
+      , endpoint_tx_buffer_size_tag <tx_buffer_size>
+      >
     >
   >;
 };
@@ -121,10 +129,12 @@ template
 struct as_ep_moded_register_type <address, transfer_type, rx_buffer_size, 0, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_out_only_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_rx_buffer_size_tag <rx_buffer_size>
+  < ::transactive_t
+    < endpoint_register_out_only_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_rx_buffer_size_tag <rx_buffer_size>
+      >
     >
   >;
 };
@@ -139,10 +149,12 @@ template
 struct as_ep_moded_register_type <address, transfer_type, 0, tx_buffer_size, false, typename std::enable_if <::usb::Messages::Descriptor::transfer_type_e::CONTROL != transfer_type && ::usb::Messages::Descriptor::transfer_type_e::INTERRUPT != transfer_type>::type> {
   
   using type = std::tuple
-  < endpoint_register_in_only_tagged_t
-    < endpoint_address_tag <address>
-    , transfer_type_tag <transfer_type>
-    , endpoint_tx_buffer_size_tag <tx_buffer_size>
+  < ::transactive_t
+    < endpoint_register_in_only_tagged_t
+      < endpoint_address_tag <address>
+      , transfer_type_tag <transfer_type>
+      , endpoint_tx_buffer_size_tag <tx_buffer_size>
+      >
     >
   >;
 };
