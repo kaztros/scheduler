@@ -41,17 +41,6 @@ constexpr endpoint_type_e as_endpoint_type (transfer_type_e x) noexcept {
   //Flagrantly die.
 }
 
-enum class endpoint_status_e : uint8_t {
-  DISABLED = 0b00,
-  STALL = 0b01,
-  NAK = 0b10,
-  VALID = 0b11,
-};
-
-constexpr endpoint_status_e operator^ (endpoint_status_e lhs, endpoint_status_e rhs) {
-  return static_cast<endpoint_status_e> (static_cast<uint8_t>(lhs) ^ static_cast<uint8_t>(rhs));
-}
-
 enum class transaction_direction_e : uint8_t {
   CTR_TX_IN = 0,    //The device transmits.  The bus does an "IN" transaction.
   CTR_RX_OUT = 1,   //The device receives.  The bus does an "OUT" transaction.
@@ -114,27 +103,32 @@ struct device_address_register_t
 };
 
 ///@brief Pre-initialization aspect of an endpoint-register.
-struct endpoint_register_setup_t {
+struct endpoint_register_setup_t
+: public volatile_assign_by_raw <endpoint_register_setup_t>
+{
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <endpoint_status_e,  4,  2, endpoint_status_e::VALID>> stat_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
     BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
     BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <endpoint_status_e, 12,  2, endpoint_status_e::VALID>> stat_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
     BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
     BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
   };
+  //using volatile_assign_by_raw <endpoint_register_setup_t> ::operator=;
 };
 
 ///@brief Bidirectional aspect of an endpoint-register.
 using endpoint_register_bidir_t = endpoint_register_setup_t;
 
 ///@brief Restricted endpoint-register, double-buffered OUT (device-rx) register
-struct endpoint_register_out_only_t {
+struct endpoint_register_out_only_t
+: public volatile_assign_by_raw <endpoint_register_out_only_t>
+{
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
@@ -142,20 +136,22 @@ struct endpoint_register_out_only_t {
     BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
     BitfieldMember <uint16_t, BFE <endpoint_type_e,  9,  2, endpoint_type_e::INTERRUPT>> ep_type;
     BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
-    BitfieldMember <uint16_t, BFE <endpoint_status_e, 12,  2, endpoint_status_e::VALID>> stat_rx;
+    BitfieldMember <uint16_t, BFE <uint16_t, 12,  2>> stat_rx;
     BitfieldMember <uint16_t, BFE <uint16_t, 14,  1>> dtog_rx;
     BitfieldMember <uint16_t, BFE <uint16_t, 15,  1>> ctr_rx;
   };
-
+  
   operator endpoint_register_setup_t & () noexcept;
 };
 
 ///@brief Restricted endpoint-register, double-buffered IN (device-tx) register
-struct endpoint_register_in_only_t {
+struct endpoint_register_in_only_t
+: public volatile_assign_by_raw <endpoint_register_in_only_t>
+{
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0,  4>> address;
-    BitfieldMember <uint16_t, BFE <endpoint_status_e,  4,  2, endpoint_status_e::VALID>> stat_tx;
+    BitfieldMember <uint16_t, BFE <uint16_t,  4,  2>> stat_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  6,  1>> dtog_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  7,  1>> ctr_tx;
     BitfieldMember <uint16_t, BFE <uint16_t,  8,  1>> ep_kind;
@@ -163,18 +159,21 @@ struct endpoint_register_in_only_t {
     BitfieldMember <uint16_t, BFE <uint16_t, 11,  1>> setup;
     BitfieldMember <uint16_t, BFE <std::size_t, 14,  1>> sw_buf;
   };
-
+  
+  /// @brief Pretend to be our base-register-type.
   operator endpoint_register_setup_t & () noexcept;
 };
 
 ///@brief Endpoint register union.
-struct endpoint_register_t {
+struct endpoint_register_t
+: public volatile_assign_by_raw <endpoint_register_t>
+{
   union {
     uint16_t _raw;
-    transactive_t <endpoint_register_bidir_t> bidir;
-    transactive_t <endpoint_register_setup_t> setup;
-    transactive_t <endpoint_register_out_only_t> rx_only;
-    transactive_t <endpoint_register_in_only_t> tx_only;
+    endpoint_register_bidir_t bidir;
+    endpoint_register_setup_t setup;
+    endpoint_register_out_only_t rx_only;
+    endpoint_register_in_only_t tx_only;
   };
   
   constexpr operator endpoint_register_bidir_t & () { return bidir; }

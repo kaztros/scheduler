@@ -249,26 +249,22 @@ template
 , typename buffer_datas_ref
 , typename ep_ctl_tagged_t
 >
-void inline endpoint_sub_isr_rx
-( ::transactive_t<ep_ctl_tagged_t> volatile & ep_ctl
-, ::transaction_t<ep_ctl_tagged_t> transaction
-) noexcept {
+void inline endpoint_sub_isr_rx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+  ep_ctl = clear_ctr_rx (endpoint_nop (copy));
   
-  //ep_ctl = verbs::clear_ctr_rx (endpoint_nop (copy));
-  
-  if (0 == get_application_rx_buffer_index (transaction.original)) {
+  if (0 == get_application_rx_buffer_index (copy)) {
     (*sub_isr_delegate_ref()).handle_correct_rx
      ( span (getm<0> (*buffer_datas_ref()), getm<0> (*buffer_ctls_ref()))
-     , transaction.original
+     , copy
      );
   } else {
     (*sub_isr_delegate_ref()).handle_correct_rx
      ( span (getm<1> (*buffer_datas_ref()), getm<1> (*buffer_ctls_ref()))
-     , transaction.original
+     , copy
      );
   }
 
-  ep_ctl = clear_ctr_rx (release_rx_buffer (transaction));
+  ep_ctl = release_rx_buffer (endpoint_nop (copy));
 }
 
 template
@@ -277,27 +273,20 @@ template
 , typename buffer_datas_ref
 , typename ep_ctl_tagged_t
 >
-void inline endpoint_sub_isr_tx
-( ::transactive_t<ep_ctl_tagged_t> volatile & ep_ctl
-, ::transaction_t<ep_ctl_tagged_t> transaction
-) noexcept
-{
-  //ep_ctl = clear_ctr_tx (endpoint_nop (copy));
+void inline endpoint_sub_isr_tx (ep_ctl_tagged_t volatile & ep_ctl, ep_ctl_tagged_t copy) noexcept {
+  ep_ctl = clear_ctr_tx (endpoint_nop (copy));
   
-  if (0 == get_application_tx_buffer_index (transaction.original)) {
+  if (0 == get_application_tx_buffer_index (copy)) {
     (*sub_isr_delegate_ref()).handle_correct_tx
     ( max_span (getm<0> (*buffer_datas_ref()))
-    , transaction.original
+    , copy
     );
   } else {
     (*sub_isr_delegate_ref()).handle_correct_tx
     ( max_span (getm<1> (*buffer_datas_ref()))
-    , transaction.original
+    , copy
     );
   }
-  
-  ep_ctl = clear_ctr_tx(transaction);
-  
 }
 
 /*----------------------------------------------------------------------------*/
@@ -311,29 +300,29 @@ template
 >
 void endpoint_sub_isr () noexcept {
   auto & ep_ctl = *ep_ctl_tagged_ref();
-  auto transaction = ++ep_ctl;
-
-  using ep_ctl_t = decltype(transaction.original);
+  std::decay_t <decltype (ep_ctl)> ep_ctl_local;
+  
+  ep_ctl_local = ep_ctl;
 
   if constexpr
-  ( std::is_base_of_v <endpoint_register_bidir_t, ep_ctl_t>
-  || std::is_base_of_v <endpoint_register_out_only_t, ep_ctl_t>
+  ( std::is_base_of_v <endpoint_register_bidir_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_out_only_t, decltype(ep_ctl_local)>
   ) {
-    if (transaction.original.ctr_rx) {
+    if (ep_ctl_local.ctr_rx) {
       endpoint_sub_isr_rx
         < sub_isr_delegate_ref, buffer_ctls_ref, buffer_datas_ref >
-        ( ep_ctl, transaction );
+        ( ep_ctl, ep_ctl_local );
     }
   }
   
   if constexpr
-  ( std::is_base_of_v <endpoint_register_bidir_t, ep_ctl_t>
-  || std::is_base_of_v <endpoint_register_in_only_t, ep_ctl_t>
+  ( std::is_base_of_v <endpoint_register_bidir_t, decltype(ep_ctl_local)>
+  || std::is_base_of_v <endpoint_register_in_only_t, decltype(ep_ctl_local)>
   ) {
-    if (transaction.original.ctr_tx) {
+    if (ep_ctl_local.ctr_tx) {
       endpoint_sub_isr_tx
         < sub_isr_delegate_ref, buffer_ctls_ref, buffer_datas_ref >
-        ( ep_ctl, transaction );
+        ( ep_ctl, ep_ctl_local );
     }
   }
 }
