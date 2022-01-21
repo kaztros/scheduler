@@ -164,7 +164,7 @@ struct endpoint_register_in_only_t {
 ///@brief Endpoint register union.
 struct endpoint_register_t {
   union {
-    uint16_t _raw;
+    alignas(uint32_t) uint16_t _raw;
     transactive_t <endpoint_register_bidir_t> bidir;
     transactive_t <endpoint_register_setup_t> setup;
     transactive_t <endpoint_register_out_only_t> rx_only;
@@ -215,26 +215,17 @@ struct buffer_count_t {
   };
 };
 
-template <typename T>
-struct dw_aligned
-: public T
-{
-  static_assert(2 == sizeof(T));  //fragile implementation.  BE NICE TO IT.
-private:
-  uint16_t _dw_aligned_space;
-};
-
-static_assert (4 == sizeof(dw_aligned<endpoint_register_t>));
-
 struct device_registers_t {
-  dw_aligned <volatile_but_raw_c <endpoint_register_t>> ep [8];
-  uint8_t _reserved_20_20 [0x20];
-  dw_aligned <volatile_but_raw_c <control_register_t>> cnt;
-  dw_aligned <volatile_but_raw_c <interrupt_status_register_t>> ist;
-  uint8_t _reserved_48_04 [0x04]; //Frame number, unused for now.
-  dw_aligned <volatile_but_raw_c <device_address_register_t>> dadd;
-  dw_aligned <volatile_but_raw_c <btable_register_t>> btable;
-  uint8_t _reserved_54_08 [0x08]; //Low-power control, battery charging detector.
+  volatile_but_raw_c <endpoint_register_t> ep[8];
+  //^ There's no where to put alignas in here, and have indexing work >:/
+  //dw_aligned <volatile_but_raw_c <endpoint_register_t>> ep [8];
+  alignas(uint32_t) uint8_t _reserved_20_20 [0x20];
+  alignas(uint32_t) volatile_but_raw_c <control_register_t> cnt;
+  alignas(uint32_t) volatile_but_raw_c <interrupt_status_register_t> ist;
+  alignas(uint32_t) uint8_t _reserved_48_04 [0x04]; //Frame number, unused for now.
+  alignas(uint32_t) volatile_but_raw_c <device_address_register_t> dadd;
+  alignas(uint32_t) volatile_but_raw_c <btable_register_t> btable;
+  alignas(uint32_t) uint8_t _reserved_54_08 [0x08]; //Low-power control, battery charging detector.
 };
 
 
@@ -255,7 +246,8 @@ using buffer_spans_t = std::array <buffer_span_t, 2>;
 static_assert (sizeof(control_register_t) == sizeof(control_register_t::_raw));
 static_assert (sizeof(interrupt_status_register_t) == sizeof(interrupt_status_register_t::_raw));
 static_assert (sizeof(device_address_register_t) == sizeof(device_address_register_t::_raw));
-static_assert (sizeof(endpoint_register_t) == sizeof(endpoint_register_t::_raw));
+//static_assert (sizeof(endpoint_register_t) == sizeof(endpoint_register_t::_raw));
+//  ^ Can't alignas(uint32_t) to an array.
 static_assert (sizeof(btable_register_t) == sizeof(btable_register_t::_raw));
 static_assert (sizeof(lpm_control_and_status_register_t) == sizeof(lpm_control_and_status_register_t::_raw));
 static_assert (sizeof(buffer_offset_t) == sizeof(buffer_offset_t::_raw));
