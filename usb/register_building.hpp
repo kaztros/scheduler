@@ -186,9 +186,7 @@ struct transactive_t
   }
   
   //Allow automatic static-cast copy.
-  operator REGISTER_T () volatile {
-    return *this;
-  }
+  operator REGISTER_T () volatile { return raw_snapshot_of <REGISTER_T> (*this); }
   
   transaction_t <REGISTER_T> operator++() volatile
   { return transaction_t (raw_snapshot_of <REGISTER_T> (*this)); }
