@@ -154,37 +154,6 @@ template <typename...TAGS>
 constexpr auto commit_tx_buffer (trans_in_t <TAGS...> reg)
 { reg.transaction.sw_buf = 1; return reg; }
 
-/*
-
-constexpr auto release_rx_buffer (auto reg) {
-  if constexpr (std::is_base_of_v <endpoint_register_out_only_t, decltype(reg)>) {
-    reg.sw_buf = 1;   // Toggle sw_buf.
-  } else if constexpr (std::is_base_of_v <endpoint_register_bidir_t, decltype(reg)>) {
-    reg.stat_rx = static_cast <endpoint_status_e> (0b01);
-    // Toggles 0b10 (NAK) into 0b11 (VALID)
-    // or 0b00 (DISABLED) into 0b01 (STALL)
-  } else {
-    static_assert ("Unhandled case.");
-  }
-  return reg;
-}
- 
-*/
-
-/*
-constexpr auto commit_tx_buffer (auto reg) {
-  if constexpr (std::is_base_of_v <endpoint_register_in_only_t, decltype(reg)>) {
-    reg.sw_buf = 1; //
-  } else if constexpr (std::is_base_of_v <endpoint_register_bidir_t, decltype(reg)>) {
-    reg.stat_tx = static_cast <endpoint_status_e> (0b01);
-    // Toggles 0b10 (NAK) into 0b11 (VALID)
-    // or 0b00 (DISABLED) into 0b01 (STALL)
-  } else {
-    static_assert ("Unhandled case.");
-  }
-  return reg;
-}*/
-
 constexpr std::size_t get_application_tx_buffer_index (endpoint_register_in_only_t ep_ctl) {
   return ep_ctl.sw_buf;
 }
@@ -215,6 +184,7 @@ struct transaction_t
   , original (snapshot)
   { }
 };
+
 
 template <typename...TAGS>
 struct transaction_t

@@ -53,7 +53,7 @@ private:
   uint8_t reserved_space [btable_offset];
   //^ Not a std::array, becuase 0-length std::array takes up one byte >:[.
 public:
-  buffer_spans_t ctlses [sizeof...(EP_MODED_CTL_Ts)];
+  volatile_but_raw_c <buffer_spans_t> ctlses [sizeof...(EP_MODED_CTL_Ts)];
   std::tuple <as_native_buffers_t <EP_MODED_CTL_Ts> ...> datases;
   //Not sure if datases are offset by BTABLE.offset.  Like it might be cool to
   //allocate the ctlses at the end of the USB SRAM.
@@ -86,7 +86,7 @@ public:
     return result;
   }
   
-  static_assert (sizeof(ctlses) + sizeof(datases) < n_bytes);
+  static_assert (btable_offset + sizeof(ctlses) + sizeof(datases) <= n_bytes);
   
   void init_hw () {
     auto write_default_buffer_ctls =

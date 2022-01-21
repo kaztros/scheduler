@@ -61,11 +61,23 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
   using ep_ctl_tagged_by_idx = tuple_element_t <idx, tuple_t>;
   
   template <std::size_t idx>
+  using ep_ctl_ref_type_by_index = typename usb_dev_ref
+  ::member <&usb_dev_t::ep>
+  ::index <idx>
+  ::DREAM_T;
+  
+  template <std::size_t idx>
   using type_by_index = typename usb_dev_ref
     ::member <&usb_dev_t::ep>
     ::index <idx>
     ::base_member <endpoint_register_t>
-    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
+    ::reinterpreted
+    < //imply_volatile_but_raw_t
+      //< ep_ctl_ref_type_by_index <idx>
+      //, ep_ctl_tagged_by_idx <idx>
+      //>
+      volatile_but_raw_c <ep_ctl_tagged_by_idx <idx>>
+    >
   ;
   
   constexpr static auto helper () {

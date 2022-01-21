@@ -94,6 +94,68 @@ struct volatile_assign_by_raw {
 };
 
 /*----------------------------------------------------------------------------*/
+///@brief Container for mmap'd register, with _raw member.
+template <typename T>
+struct volatile_but_raw_c
+: public weave_volatile_t <T>
+{
+  volatile_but_raw_c () noexcept {}
+  
+  ///@note Return nothing, as GCC writes an essay of warnings.
+  void operator= (T const & rhs) { this->_raw = rhs._raw; }
+
+  operator T () { T copy; copy._raw = this->_raw; return copy;  }
+};
+
+template <typename T, std::size_t N>
+struct volatile_but_raw_c <std::array <T, N>>
+: public std::array <volatile_but_raw_c<T>, N>
+{
+  using U = std::array <volatile_but_raw_c<T>, N>;
+  
+  volatile_but_raw_c () noexcept {}
+
+  [[deprecated("Hefty operation.  Are you sure?")]]
+  void operator= (U const & rhs) { this->_raw = rhs._raw; }
+
+  [[deprecated("Hefty operation.  Are you sure?")]]
+  operator U () { U copy; copy._raw = this->_raw; return copy;  }
+};
+
+/*----------------------------------------------------------------------------*/
+template <typename T>
+struct is_volatile_but_raw
+: std::integral_constant <bool, false>
+{};
+
+template <typename T>
+struct is_volatile_but_raw <volatile_but_raw_c <T>>
+: std::integral_constant <bool, true>
+{};
+
+template <typename T>
+inline constexpr bool is_volatile_but_raw_v = is_volatile_but_raw <T>::value;
+
+/*----------------------------------------------------------------------------*/
+template <typename src_t, typename dst_t>
+struct imply_volatile_but_raw {
+  using type = std::conditional_t
+  < is_volatile_but_raw_v <src_t>
+  , volatile_but_raw_c <dst_t>
+  , dst_t
+  >;
+};
+
+template <typename src_t, typename T>
+struct imply_volatile_but_raw <src_t, volatile_but_raw_c<T>> {
+  using type = volatile_but_raw_c <T>;
+};
+
+template <typename src_t, typename dst_t>
+using imply_volatile_but_raw_t
+= typename imply_volatile_but_raw <src_t, dst_t> ::type;
+
+/*----------------------------------------------------------------------------*/
 //@brief new-type to distinguish transactions.
 template <typename REGISTER_T>
 struct transaction_t {

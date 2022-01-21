@@ -59,9 +59,7 @@ enum class transaction_direction_e : uint8_t {
 
 
 /// @brief The main control register for the USB module.
-struct control_register_t
-: public volatile_assign_by_raw <control_register_t>
-{
+struct control_register_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <bool,  0,  1>> fres;     //Force USB Reset
@@ -83,9 +81,7 @@ struct control_register_t
   };
 };
 
-struct interrupt_status_register_t
-: public volatile_assign_by_raw <interrupt_status_register_t>
-{
+struct interrupt_status_register_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint8_t,  0,  4>> ep_id; //Endpoint generating the ctr interrupt.
@@ -103,9 +99,7 @@ struct interrupt_status_register_t
   };
 };
 
-struct device_address_register_t
-: public volatile_assign_by_raw <device_address_register_t>
-{
+struct device_address_register_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint8_t, 0,  7>> address; //Endpoint generating the ctr interrupt.
@@ -183,9 +177,7 @@ struct endpoint_register_t {
 };
 
 /// @brief Describes the offset of the USB packet buffers in packet-memory.
-struct btable_register_t
-: public volatile_assign_by_raw <btable_register_t>
-{
+struct btable_register_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0, 16>> addr; //Must be 8-byte aligned.
@@ -193,9 +185,7 @@ struct btable_register_t
 };
 
 /// @brief Low-Power-Mode control and status
-struct lpm_control_and_status_register_t
-: public volatile_assign_by_raw <lpm_control_and_status_register_t>
-{
+struct lpm_control_and_status_register_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <bool,  0, 1>> lpmen;   //LPM support enabled?
@@ -208,9 +198,7 @@ struct lpm_control_and_status_register_t
 };
 
 /// @brief Packet buffer address (relative to BTABLE register)
-struct buffer_offset_t
-: public volatile_assign_by_raw <buffer_offset_t>
-{
+struct buffer_offset_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <uint16_t,  0, 16>> addr;
@@ -218,9 +206,7 @@ struct buffer_offset_t
 };
 
 /// @brief Packet buffer length, max receivable length.
-struct buffer_count_t
-: public volatile_assign_by_raw <buffer_count_t>
-{
+struct buffer_count_t {
   union {
     uint16_t _raw;
     BitfieldMember <uint16_t, BFE <std::size_t,  0, 10>> byte_count;
@@ -241,13 +227,13 @@ private:
 static_assert (4 == sizeof(dw_aligned<endpoint_register_t>));
 
 struct device_registers_t {
-  dw_aligned <endpoint_register_t> ep [8];
+  dw_aligned <volatile_but_raw_c <endpoint_register_t>> ep [8];
   uint8_t _reserved_20_20 [0x20];
-  dw_aligned <control_register_t> cnt;
-  dw_aligned <interrupt_status_register_t> ist;
+  dw_aligned <volatile_but_raw_c <control_register_t>> cnt;
+  dw_aligned <volatile_but_raw_c <interrupt_status_register_t>> ist;
   uint8_t _reserved_48_04 [0x04]; //Frame number, unused for now.
-  dw_aligned <device_address_register_t> dadd;
-  dw_aligned <btable_register_t> btable;
+  dw_aligned <volatile_but_raw_c <device_address_register_t>> dadd;
+  dw_aligned <volatile_but_raw_c <btable_register_t>> btable;
   uint8_t _reserved_54_08 [0x08]; //Low-power control, battery charging detector.
 };
 
@@ -300,3 +286,24 @@ extern pma_ram <1024, volatile uint16_t> usb1_sram; // @ 0x4000'6C00, APB1
 }//end namespace usb
 }//end namespace stm32l41xxx
 
+
+template <>
+struct volatile_but_raw_c <stm32l41xxx::usb::buffer_span_t>
+: public volatile_but_raw_c <stm32l41xxx::usb::buffer_offset_t>
+, public volatile_but_raw_c <stm32l41xxx::usb::buffer_count_t>
+{
+  volatile_but_raw_c () noexcept {}
+  
+  ///@note Return nothing, as GCC writes an essay of warnings.
+  void operator= (stm32l41xxx::usb::buffer_span_t const & rhs) {
+    static_cast <volatile_but_raw_c <stm32l41xxx::usb::buffer_offset_t> &> (*this) = rhs;
+    static_cast <volatile_but_raw_c <stm32l41xxx::usb::buffer_count_t> &> (*this) = rhs;
+  }
+
+  operator stm32l41xxx::usb::buffer_span_t () {
+    stm32l41xxx::usb::buffer_span_t copy;
+    static_cast <stm32l41xxx::usb::buffer_offset_t &> (copy) = *this;
+    static_cast <stm32l41xxx::usb::buffer_count_t &> (copy) = *this;
+    return copy;
+  }
+};

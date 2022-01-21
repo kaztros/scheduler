@@ -13,32 +13,22 @@ namespace usb {
 template <typename...TAGS>
 struct endpoint_register_bidir_tagged_t
 : public endpoint_register_bidir_t
-, public volatile_assign_by_raw <endpoint_register_bidir_tagged_t <TAGS...> >
 , TAGS ...
-{
-  //g++ needs this apparently:
-  using volatile_assign_by_raw <endpoint_register_bidir_tagged_t <TAGS...> >::operator=;
-};
+{ };
 
 
 template <typename...TAGS>
 struct endpoint_register_out_only_tagged_t
 : public endpoint_register_out_only_t
-, public volatile_assign_by_raw <endpoint_register_out_only_tagged_t <TAGS...> >
 , TAGS ...
-{
-  using volatile_assign_by_raw <endpoint_register_out_only_tagged_t <TAGS...> >::operator=;
-};
+{ };
 
 
 template <typename...TAGS>
 struct endpoint_register_in_only_tagged_t
 : public endpoint_register_in_only_t
-, public volatile_assign_by_raw <endpoint_register_in_only_tagged_t <TAGS...> >
 , TAGS ...
-{
-  using volatile_assign_by_raw <endpoint_register_in_only_tagged_t <TAGS...> >::operator=;
-};
+{ };
 
 /*----------------------------------------------------------------------------*/
 
