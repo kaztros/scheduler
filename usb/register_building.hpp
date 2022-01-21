@@ -171,7 +171,7 @@ struct transaction_t {
 ///guarantee equvalence.
 template <typename REGISTER_T>
 struct transactive_t
-: public REGISTER_T
+: public weave_volatile_t <REGISTER_T>
 {
   //Do not allow assignment between the same types:
   transactive_t () = default;
