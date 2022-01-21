@@ -71,13 +71,7 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
     ::member <&usb_dev_t::ep>
     ::index <idx>
     ::base_member <endpoint_register_t>
-    ::reinterpreted
-    < //imply_volatile_but_raw_t
-      //< ep_ctl_ref_type_by_index <idx>
-      //, ep_ctl_tagged_by_idx <idx>
-      //>
-      volatile_but_raw_c <ep_ctl_tagged_by_idx <idx>>
-    >
+    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
   ;
   
   constexpr static auto helper () {

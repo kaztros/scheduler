@@ -216,7 +216,7 @@ struct buffer_count_t {
 };
 
 struct device_registers_t {
-  volatile_but_raw_c <endpoint_register_t> ep[8];
+  transactive_t <endpoint_register_t> ep[8];
   //^ There's no where to put alignas in here, and have indexing work >:/
   //dw_aligned <volatile_but_raw_c <endpoint_register_t>> ep [8];
   alignas(uint32_t) uint8_t _reserved_20_20 [0x20];
