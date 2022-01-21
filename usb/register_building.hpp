@@ -190,7 +190,8 @@ struct transactive_t
     return *this;
   }
   
-  transaction_t <REGISTER_T> operator++() volatile { return transaction_t (raw_snapshot_of <REGISTER_T> (*this)); }
+  transaction_t <REGISTER_T> operator++() volatile
+  { return transaction_t (raw_snapshot_of <REGISTER_T> (*this)); }
 
   ///@note GCC spits out large essays when this returns a volatile reference.
   void operator= (transaction_t <REGISTER_T> x) volatile {
