@@ -180,6 +180,9 @@ struct typefied_methods
   template <typename base_t>
   using base_member = base_of_typefied <imply_cv_t <dream_t, base_t>, self_t>;
 
+  template <typename same_t>
+  using static_casted = base_of_typefied <imply_cv_t <dream_t, same_t>, self_t>;
+  
   template <typename reint_t>
   using reinterpreted = reinterpreted_of_typefied
     <imply_cv_t <dream_t, reint_t>, self_t>;

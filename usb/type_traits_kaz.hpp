@@ -151,3 +151,36 @@ struct tuple_element_offset
 : public std::integral_constant <std::size_t, element_offset <index, T> ()>
 { };
 
+/*----------------------------------------------------------------------------*/
+///@brief Get the byte-offset of a tuple's element.  It also works for arrays.
+///@note type parameters must be default-constructible.
+template <typename base_t, typename T>
+constexpr std::ptrdiff_t base_offset () {
+  union {
+    T t;
+    char a [sizeof(T)];
+  };
+  
+  auto address = std::addressof (static_cast <base_t &> (t));
+  
+  for (std::ptrdiff_t index; index < sizeof(T); ++index) {
+    if (address == a + index) {
+      return index;
+    }
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+template <typename base_t, typename T>
+struct is_base_conv
+: std::integral_constant
+  < bool,
+    ( sizeof(base_t) == sizeof(T)
+      && ( std::is_base_of_v <base_t, T> || std::is_base_of_v <T, base_t> )
+    )
+  >
+{ };
+
+template <typename base_t, typename T>
+inline constexpr bool is_base_conv_v = is_base_conv <base_t, T> :: value;
+

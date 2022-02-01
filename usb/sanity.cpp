@@ -3,6 +3,9 @@
 #include "stm32l41xxx_usb_adaptors_interrupts.hpp"
 #include "stm32l41xxx_usb_adaptors_tagged.hpp"
 
+#include "usb_standard.hpp"
+
+
 namespace stm32l41xxx {
 namespace usb {
 
@@ -71,7 +74,8 @@ struct bind_endpoint_registers <usb_dev_ref, std::tuple<Ts...>> {
     ::member <&usb_dev_t::ep>
     ::index <idx>
     ::base_member <endpoint_register_t>
-    ::reinterpreted <ep_ctl_tagged_by_idx <idx>>
+    ::static_casted <typename ep_ctl_tagged_by_idx <idx>::UNTAGGED_T>
+    ::static_casted <ep_ctl_tagged_by_idx <idx>>
   ;
   
   constexpr static auto helper () {
@@ -96,5 +100,40 @@ generate_sub_isr_jump_table_helper
 >
 ::doit ();
 
+
+struct usb_device_isr_delegate {
+  //ignore CTR.
+  virtual void handle_pma_overrun_underrun () = 0;
+  virtual void handle_error () = 0;
+  virtual void handle_wakeup () = 0;
+  virtual void handle_suspend () = 0;
+  virtual void handle_reset () = 0;
+  virtual void handle_sof () = 0;     //sof: start of frame
+  virtual void handle_expected_sof () = 0;
+  virtual void handle_lpm_l1_req () = 0;  //low-power-mode
+};
+
 }//end namespace usb
 }//end namespace stm32l41xxx
+
+
+struct device_control_protocol_standard {
+  //TODO:  Handles for all the setup messages and shit.
+  virtual std::optional <uint16_t> handle (usb::Messages::Setup::get_standard_status_m) = 0;
+  //virtual std::optional <uint16_t> handle (usb::Messages::Setup::get_endpoint_status_m) = 0;
+  virtual std::optional <uint16_t> handle (usb::Messages::Setup::get_interface_status_m) = 0;
+  virtual void handle (usb::Messages::Setup::clear_standard_feature_m) = 0;
+  //virtual void handle (usb::Messages::Setup::clear_endpoint_feature_m) = 0;
+  //virtual void handle (usb::Messages::Setup::clear_interface_feature_m) = 0;
+  virtual void handle (usb::Messages::Setup::set_standard_feature_m) = 0;
+  //virtual void handle (usb::Messages::Setup::set_endpoint_feature_m) = 0;
+  //virtual void handle (usb::Messages::Setup::set_interface_feature_m) = 0;
+  virtual void handle (usb::Messages::Setup::set_address_m) = 0;
+  virtual std::optional <std::span <uint8_t>> handle (usb::Messages::Setup::get_descriptor_m) = 0;
+  virtual void handle (usb::Messages::Setup::set_descriptor_m) = 0;
+  virtual std::optional <uint8_t> handle (usb::Messages::Setup::get_configuration_m) = 0;
+  virtual void handle (usb::Messages::Setup::set_configuration_m) = 0;
+  virtual std::optional <uint8_t> handle (usb::Messages::Setup::get_interface_m) = 0;
+  virtual void handle (usb::Messages::Setup::set_interface_m) = 0;
+  virtual std::optional <uint16_t> handle (usb::Messages::Setup::synch_frame_m) = 0;
+};

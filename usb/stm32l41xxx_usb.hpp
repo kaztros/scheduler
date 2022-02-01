@@ -174,6 +174,11 @@ struct endpoint_register_t {
   constexpr operator endpoint_register_bidir_t & () { return bidir; }
   constexpr operator endpoint_register_out_only_t & () { return rx_only; }
   constexpr operator endpoint_register_in_only_t & () { return tx_only; }
+
+  operator volatile endpoint_register_bidir_t & () volatile { return bidir; }
+  operator volatile endpoint_register_out_only_t & () volatile { return rx_only; }
+  operator volatile endpoint_register_in_only_t & () volatile { return tx_only; }
+
 };
 
 /// @brief Describes the offset of the USB packet buffers in packet-memory.

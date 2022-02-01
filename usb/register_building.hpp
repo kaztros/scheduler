@@ -104,7 +104,7 @@ struct volatile_but_raw_c
   ///@note Return nothing, as GCC writes an essay of warnings.
   void operator= (T const & rhs) { this->_raw = rhs._raw; }
 
-  operator T () { T copy; copy._raw = this->_raw; return copy;  }
+  operator T () { T copy; copy._raw = this->_raw; return copy; }
 };
 
 template <typename T, std::size_t N>
@@ -171,7 +171,7 @@ struct transaction_t {
 ///guarantee equvalence.
 template <typename REGISTER_T>
 struct transactive_t
-: public weave_volatile_t <REGISTER_T>
+: public std::add_const_t <weave_volatile_t <REGISTER_T>>
 {
   //Do not allow assignment between the same types:
   transactive_t () = default;
@@ -179,29 +179,37 @@ struct transactive_t
   transactive_t (transactive_t <REGISTER_T> &&) = delete;
   transactive_t & operator= (transactive_t <REGISTER_T> const &) = delete;
   transactive_t & operator= (transactive_t <REGISTER_T> &&) = delete;
-
+  
   //Allow manual static-cast copy.
-  REGISTER_T operator() () volatile {
-    return *this;
-  }
+  REGISTER_T operator() () volatile { return *this; }
   
   //Allow automatic static-cast copy.
-  operator REGISTER_T () volatile { return raw_snapshot_of <REGISTER_T> (*this); }
+  operator REGISTER_T () volatile
+  { return raw_snapshot_of <REGISTER_T> (*this); }
   
   transaction_t <REGISTER_T> operator++() volatile
   { return transaction_t (raw_snapshot_of <REGISTER_T> (*this)); }
 
   ///@note GCC spits out large essays when this returns a volatile reference.
+  ///@note Which is used a total of 0 times.  So it's commented out.
   void operator= (transaction_t <REGISTER_T> x) volatile {
-    this->_raw = x.transaction._raw;
+    const_cast <std::remove_volatile_t<decltype(this->_raw)> &> (this->_raw) = x.transaction._raw;
     //return *this;
   }
   
   ///@note Because of the volatile variant, this one returns void too.
   void operator= (transaction_t <REGISTER_T> x) {
-    this->_raw = x.transaction._raw;
+    const_cast <REGISTER_T volatile &> (this->_raw) = x.transaction._raw;
     //return *this;
   }
+ 
+  ///@brief Allow container casts, if T and REGISTER_T is_base_conv_v.
+  template <typename T>
+  operator transactive_t<T> & () {
+    static_assert (is_base_conv_v <T, REGISTER_T>);
+    return * (reinterpret_cast <transactive_t<T> *> (this));
+  };
+  
 };
 
 /*----------------------------------------------------------------------------*/

@@ -14,21 +14,27 @@ template <typename...TAGS>
 struct endpoint_register_bidir_tagged_t
 : public endpoint_register_bidir_t
 , TAGS ...
-{ };
+{
+  using UNTAGGED_T = endpoint_register_bidir_t;
+};
 
 
 template <typename...TAGS>
 struct endpoint_register_out_only_tagged_t
 : public endpoint_register_out_only_t
 , TAGS ...
-{ };
+{
+  using UNTAGGED_T = endpoint_register_out_only_t;
+};
 
 
 template <typename...TAGS>
 struct endpoint_register_in_only_tagged_t
 : public endpoint_register_in_only_t
 , TAGS ...
-{ };
+{
+  using UNTAGGED_T = endpoint_register_in_only_t;
+};
 
 /*----------------------------------------------------------------------------*/
 
