@@ -23,11 +23,11 @@ A stab at co-op multitasking on ARMv7.
 * Allow polymorphic greenlets that are picky about what register-sets they save/restore.
 * Work with the MMU to forbid access to another greenlet's space, or interrupt on OOB access.
 * Schedule greenlet execution based off interrupts
-* Handle exception throwing... maybe.  Exceptions are philosophically weird.
+* Handle exception throwing... maybe.  Exceptions are conceptually weird.
 
 
 <h2>Why not work on this some more?</h2>
-<p>Co-routines obsolete the coolest part of this project IMO.  I couldn't compile the example-code on Godbolt while Scheduler was being tested on hardware.</p>
+<p>Co-routines obsolete the coolest part of this project IMO.  But I couldn't compile the soon-to-be-standard co-routine examples on Godbolt.  And at the same time, this Scheduler was running on a Nucleo board.</p>
 <p>I could continue work on this.  But I think I'd rather find a different C++-oriented kernel and work on that.<p>
 
 <h2>What's cool about this?</h2>
